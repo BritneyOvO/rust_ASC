@@ -1,0 +1,19 @@
+[package]
+name = "asc-hap"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "HarmonyOS HAP access for ASC"
+
+[dependencies]
+asc-abc.workspace = true
+asc-abc-dec.workspace = true
+crc32fast.workspace = true
+flate2.workspace = true
+memmap2.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+asc-abc.workspace = true

@@ -46,7 +46,7 @@ sha1 = "0.10"
 tempfile = "3"
 
 [workspace]
-members = [".", "crates/asc-abc", "crates/asc-abc-dec"]
+members = [".", "crates/asc-abc", "crates/asc-abc-dec", "crates/asc-hap"]
 default-members = ["."]
 exclude = ["radguard"]
 resolver = "3"
@@ -66,3 +66,4 @@ memmap2 = "0.9"
 crc32fast = "1.5.2"
 asc-abc = { path = "crates/asc-abc" }
 asc-abc-dec = { path = "crates/asc-abc-dec" }
+asc-hap = { path = "crates/asc-hap" }
