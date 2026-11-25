@@ -309,10 +309,7 @@ pub(crate) fn _inflate_dex_into_with(
         0 => out.extend_from_slice(comp_view),
         8 => {
             let size = entry.uncomp_size as usize;
-            out.reserve(size);
-            // SAFETY: `reserve` guarantees capacity for `size` bytes and every
-            // byte is written by the decompressor before it is observed.
-            unsafe { out.set_len(size) };
+            out.resize(size, 0);
             let actual_size = decompressor
                 .deflate_decompress(comp_view, out)
                 .map_err(|error| {
@@ -343,8 +340,7 @@ pub(crate) fn _inflate_dex(
         8 => match stop_event {
             // A single libdeflate call is faster when cancellation is unnecessary.
             None => {
-                let mut data = Vec::with_capacity(entry.uncomp_size as usize);
-                unsafe { data.set_len(entry.uncomp_size as usize) };
+                let mut data = vec![0; entry.uncomp_size as usize];
                 let actual_size = Decompressor::new()
                     .deflate_decompress(comp_view, &mut data)
                     .map_err(|error| {
