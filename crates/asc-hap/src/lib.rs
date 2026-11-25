@@ -8,7 +8,7 @@ mod error;
 mod hap;
 mod resources;
 mod archive;
-pub use archive::{Archive, ClassOutput};
+pub use archive::{Archive, BatchOutput, ClassOutput};
 
 pub use error::{Error, Result};
 pub use hap::{

@@ -634,7 +634,7 @@ fn open_hap(path: &Path) -> Result<(File, Mmap)> {
     Ok((file, map))
 }
 
-fn run_indexed<T, F>(len: usize, threads: usize, work: F) -> Result<Vec<T>>
+pub(crate) fn run_indexed<T, F>(len: usize, threads: usize, work: F) -> Result<Vec<T>>
 where
     T: Send,
     F: Fn(usize) -> Result<T> + Sync,

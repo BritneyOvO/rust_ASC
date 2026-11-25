@@ -27,6 +27,7 @@ fn execute(command: &str, args: &ArgMatches, path: &Path, kind: ArtifactKind, ou
     let threads = args.try_get_one::<usize>("thread").ok().flatten().copied()
         .unwrap_or_else(|| std::thread::available_parallelism().map_or(1, usize::from));
     if threads == 0 { return Err("Worker count must be greater than zero".into()); }
+
     let options = Options { threads, debug: args.get_flag("debug") };
     let output = args.try_get_one::<String>("output").ok().flatten();
     let json = args.try_get_one::<bool>("json").ok().flatten().copied().unwrap_or(false);
@@ -44,6 +45,7 @@ fn execute(command: &str, args: &ArgMatches, path: &Path, kind: ArtifactKind, ou
             let targets = class_queries(args)?;
             let mode = output_mode(args);
             let language = if mode == OutputMode::Source { "javascript" } else { "ark-assembly" };
+            let mut archive_errors = Vec::new();
             let results = if let Some(bytes) = &bytes {
                 let metadata = asc_abc::Abc::parse(bytes).map_err(|e| e.to_string())?;
                 let decompiler = Decompiler::new(bytes).map_err(|e| e.to_string())?;
@@ -61,9 +63,11 @@ fn execute(command: &str, args: &ArgMatches, path: &Path, kind: ArtifactKind, ou
                     Ok(result)
                 }).collect::<Result<Vec<_>, String>>()?
             } else {
-                asc_hap::Archive::open(path).and_then(|a| a.get_classes(&targets, mode)).map_err(|e| e.to_string())?
+                let batch = asc_hap::Archive::open(path).and_then(|a| a.get_classes(&targets, mode, threads)).map_err(|e| e.to_string())?;
+                archive_errors = batch.errors;
+                batch.classes
             };
-            let mut failed = 0;
+            let mut failed = archive_errors.len();
             let rows: Vec<_> = targets.into_iter().zip(results).map(|(class, result)| {
                 match result {
                     Some(item) => match item.output {
@@ -72,8 +76,8 @@ fn execute(command: &str, args: &ArgMatches, path: &Path, kind: ArtifactKind, ou
                         Err(error) => { failed += 1; ClassOutput { class, status: "error", backend: "harmony", language,
                             member: Some(item.member), source: None, error: Some(error.to_string()) } }
                     },
-                    None => { failed += 1; ClassOutput { class: class.clone(), status: "not_found", backend: "harmony", language,
-                        member: None, source: None, error: Some(format!("record {class} not found")) } },
+                    None => { failed += 1; ClassOutput { class: class.clone(), status: if archive_errors.is_empty() { "not_found" } else { "error" }, backend: "harmony", language,
+                        member: None, source: None, error: Some(if archive_errors.is_empty() { format!("record {class} not found") } else { archive_errors.join("\n") }) } },
                 }
             }).collect();
             let text = if json { output::json(&rows)? } else {
@@ -83,7 +87,7 @@ fn execute(command: &str, args: &ArgMatches, path: &Path, kind: ArtifactKind, ou
                 })).collect::<String>()
             };
             output::emit(&text, output, true, out)?;
-            if failed == 0 { Ok(()) } else { Err(format!("{failed} Harmony record(s) could not be decompiled")) }
+            if failed == 0 { Ok(()) } else { Err(format!("{failed} Harmony record(s) or members could not be read: {}", archive_errors.join("; "))) }
         }
         "listclass" => {
             let prefix = args.get_one::<String>("prefix").map(String::as_str);
@@ -101,7 +105,7 @@ fn execute(command: &str, args: &ArgMatches, path: &Path, kind: ArtifactKind, ou
             } else { files.iter().map(|(name, text)| format!("===== {name} =====\n{text}")).collect() };
             output::emit(&text, output, true, out)
         }
-        "export" => export(args, path, bytes.as_deref(), &table, out),
+        "export" => export(args, path, bytes.as_deref(), &table, threads, out),
         "findrefs" => {
             if json { return Err("structured Harmony references require the instruction query engine".into()); }
             let (name, query) = args.subcommand().ok_or("missing reference query")?;
@@ -155,7 +159,7 @@ fn read_classes(path: &str) -> Result<Vec<String>, String> {
     Ok(text.lines().map(|s| s.trim().trim_start_matches('\u{feff}')).filter(|s| !s.is_empty() && !s.starts_with('#')).map(str::to_owned).collect())
 }
 
-fn export(args: &ArgMatches, path: &Path, bytes: Option<&[u8]>, resources: &HapResources, out: &mut dyn Write) -> Result<(), String> {
+fn export(args: &ArgMatches, path: &Path, bytes: Option<&[u8]>, resources: &HapResources, threads: usize, out: &mut dyn Write) -> Result<(), String> {
     let destination = Path::new(args.get_one::<String>("output_directory").ok_or("missing output directory")?);
     let prefix = args.get_one::<String>("prefix").map(String::as_str);
     let requested = args.get_one::<String>("classes_file").map(|p| read_classes(p)).transpose()?;
@@ -165,7 +169,7 @@ fn export(args: &ArgMatches, path: &Path, bytes: Option<&[u8]>, resources: &HapR
     let mut count = 0usize;
     let mut errors = Vec::new();
     let mut visit = |item: asc_hap::ClassOutput| -> asc_hap::Result<()> {
-        if requested.as_ref().is_some_and(|queries| !queries.iter().any(|query| equivalent_record(query, &item.class))) { return Ok(()); }
+        if !item.class.is_empty() && requested.as_ref().is_some_and(|queries| !queries.iter().any(|query| equivalent_record(query, &item.class))) { return Ok(()); }
         remaining.retain(|query| !equivalent_record(query, &item.class));
         match item.output {
             Ok(text) => {
@@ -190,13 +194,20 @@ fn export(args: &ArgMatches, path: &Path, bytes: Option<&[u8]>, resources: &HapR
         let names = asc_abc::class_names(bytes, prefix).map_err(|e| e.to_string())?;
         let parser = Decompiler::new(bytes).map_err(|e| e.to_string())?;
         for class in names {
+            if requested.as_ref().is_some_and(|queries| !queries.iter().any(|query| equivalent_record(query, &class))) { continue; }
             let output = parser.render_class(&class, mode).map(|s| {
                 if mode == OutputMode::Source { resources.annotate(&s).into_owned() } else { s }
             }).map_err(asc_hap::Error::from);
             visit(asc_hap::ClassOutput { class, member: path.display().to_string(), member_index: 0, output }).map_err(|e| e.to_string())?;
         }
     } else {
-        asc_hap::Archive::open(path).and_then(|a| a.visit_classes(prefix, mode, visit)).map_err(|e| e.to_string())?;
+        let archive = asc_hap::Archive::open(path).map_err(|e| e.to_string())?;
+        archive.visit_selected_classes(prefix, requested.as_deref(), mode, threads, visit).map_err(|e| e.to_string())?;
+        for (name, text) in archive.manifest_files().map_err(|e| e.to_string())? {
+            let filename = Path::new(&name).file_name().ok_or("manifest has no filename")?;
+            fs::create_dir_all(destination).map_err(|e| e.to_string())?;
+            fs::write(destination.join(filename), text).map_err(|e| e.to_string())?;
+        }
     }
     writeln!(out, "exported {count} Harmony records ({} errors) -> {}", errors.len(), destination.display()).map_err(|e| e.to_string())?;
     if !remaining.is_empty() { return Err(format!("records not found: {}", remaining.into_iter().collect::<Vec<_>>().join(", "))); }

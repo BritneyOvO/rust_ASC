@@ -26,6 +26,11 @@ pub struct Archive {
     resources: OnceLock<HapResources>,
 }
 
+pub struct BatchOutput {
+    pub classes: Vec<Option<ClassOutput>>,
+    pub errors: Vec<String>,
+}
+
 pub struct ClassOutput {
     pub class: String,
     pub member: String,
@@ -95,39 +100,75 @@ impl Archive {
         Ok(classes)
     }
 
-    pub fn get_classes(&self, queries: &[String], mode: OutputMode) -> Result<Vec<Option<ClassOutput>>> {
+    pub fn get_classes(&self, queries: &[String], mode: OutputMode, threads: usize) -> Result<BatchOutput> {
+        if threads == 0 { return Err(Error::new("threads must be >= 1")); }
         let mut results: Vec<Option<ClassOutput>> = (0..queries.len()).map(|_| None).collect();
+        let mut errors = Vec::new();
         for entry in hap::ranked_code(&self.entries) {
             if results.iter().all(Option::is_some) { break; }
-            let bytes = hap::inflate(&self.map, entry)?;
-            let metadata = asc_abc::Abc::parse(&bytes)?;
-            let mut decompiler = None;
-            for (query, result) in queries.iter().zip(&mut results) {
-                if result.is_some() || metadata.class_offset(query)?.is_none() { continue; }
-                let parser = match &decompiler {
-                    Some(parser) => parser,
-                    None => decompiler.insert(Decompiler::new(&bytes)?),
-                };
+            let bytes = match hap::inflate(&self.map, entry) {
+                Ok(bytes) => bytes,
+                Err(error) => { errors.push(format!("{}: {error}", entry.name)); continue; }
+            };
+            let metadata = match asc_abc::Abc::parse(&bytes) {
+                Ok(metadata) => metadata,
+                Err(error) => { errors.push(format!("{}: {error}", entry.name)); continue; }
+            };
+            let selected: Vec<_> = queries.iter().enumerate().filter_map(|(index, query)| {
+                if results[index].is_some() { return None; }
+                match metadata.class_offset(query) {
+                    Ok(Some(_)) => Some((index, query)),
+                    Ok(None) => None,
+                    Err(error) => { errors.push(format!("{}: {error}", entry.name)); None }
+                }
+            }).collect();
+            if selected.is_empty() { continue; }
+            let parser = Decompiler::new(&bytes)?;
+            let rendered = hap::run_indexed(selected.len(), threads, |index| {
+                let (_, query) = selected[index];
                 let output = parser.render_class(query, mode).map(|text| {
                     if mode == OutputMode::Assembly { text } else { self.resources().annotate(&text).into_owned() }
                 }).map_err(Error::from);
-                *result = Some(ClassOutput { class: query.clone(), member: entry.name.clone(), member_index: entry.index, output });
-            }
+                Ok(ClassOutput { class: query.clone(), member: entry.name.clone(), member_index: entry.index, output })
+            })?;
+            for ((index, _), output) in selected.into_iter().zip(rendered) { results[index] = Some(output); }
         }
-        Ok(results)
+        Ok(BatchOutput { classes: results, errors })
     }
 
-    /// Export all matching records, including same-named records from different members.
-    pub fn visit_classes(&self, prefix: Option<&str>, mode: OutputMode, mut visit: impl FnMut(ClassOutput) -> Result<()>) -> Result<()> {
+    /// Filter before rendering, reuse each parser, and bound retained source by worker count.
+    pub fn visit_selected_classes(&self, prefix: Option<&str>, queries: Option<&[String]>, mode: OutputMode, threads: usize, mut visit: impl FnMut(ClassOutput) -> Result<()>) -> Result<()> {
+        if threads == 0 { return Err(Error::new("threads must be >= 1")); }
         for entry in hap::ranked_code(&self.entries) {
-            let bytes = hap::inflate(&self.map, entry)?;
-            let names = asc_abc::class_names(&bytes, prefix)?;
+            let prepare = || -> Result<_> {
+                let bytes = hap::inflate(&self.map, entry)?;
+                let metadata = asc_abc::Abc::parse(&bytes)?;
+                let mut names = metadata.class_names(prefix)?;
+                if let Some(queries) = queries {
+                    let offsets = queries.iter().map(|query| metadata.class_offset(query)).collect::<std::result::Result<Vec<_>, _>>()?;
+                    let offsets: std::collections::BTreeSet<_> = offsets.into_iter().flatten().collect();
+                    names.retain(|name| metadata.class_offset(name).ok().flatten().is_some_and(|offset| offsets.contains(&offset)));
+                }
+                Ok((bytes, names))
+            };
+            let (bytes, names) = match prepare() {
+                Ok(prepared) => prepared,
+                Err(error) => {
+                    visit(ClassOutput { class: String::new(), member: entry.name.clone(), member_index: entry.index, output: Err(error) })?;
+                    continue;
+                }
+            };
+            if names.is_empty() { continue; }
             let decompiler = Decompiler::new(&bytes)?;
-            for class in names {
-                let output = decompiler.render_class(&class, mode).map(|text| {
-                    if mode == OutputMode::Assembly { text } else { self.resources().annotate(&text).into_owned() }
-                }).map_err(Error::from);
-                visit(ClassOutput { class, member: entry.name.clone(), member_index: entry.index, output })?;
+            for names in names.chunks(threads) {
+                let outputs = hap::run_indexed(names.len(), threads, |index| {
+                    let class = &names[index];
+                    let output = decompiler.render_class(class, mode).map(|text| {
+                        if mode == OutputMode::Assembly { text } else { self.resources().annotate(&text).into_owned() }
+                    }).map_err(Error::from);
+                    Ok(ClassOutput { class: class.clone(), member: entry.name.clone(), member_index: entry.index, output })
+                })?;
+                for output in outputs { visit(output)?; }
             }
         }
         Ok(())
