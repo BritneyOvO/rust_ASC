@@ -25,7 +25,7 @@ impl ServerHandler for Server {
         ServerConfig::new(ServerCapabilities::builder().enable_tools().build())
             .with_server_info(Implementation::new("rust_ASC", env!("CARGO_PKG_VERSION")))
             .with_instructions(
-                "Inspect local Android APK files. Calls are stateless. Paths use the server \
+                "Inspect local Android files and, when enabled, Harmony HAP/ABC files. Paths use the server \
                  filesystem. Output files may be overwritten. Failures return CLI stderr.",
             )
     }

@@ -8,7 +8,8 @@ use serde_json::Value;
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct GetClass {
-    /// Path to the APK to analyze.
+    /// Local APK path; with Harmony enabled, getclass/listclass/getmanifest/findrefs/export also accept HAP or ABC.
+    #[serde(alias = "input_path")]
     apk_path: String,
     /// Single dotted class name or Dalvik descriptor.
     class_name: Option<String>,
@@ -23,12 +24,19 @@ struct GetClass {
     thread: Option<usize>,
     /// Optional source output file. Existing files are overwritten. Content is also returned.
     output: Option<String>,
+    /// Harmony record output mode: source (default) or asm.
+    #[cfg(feature = "harmony")]
+    abc_output: Option<String>,
+    /// Resource directory or HAP for a bare ABC file.
+    #[cfg(feature = "harmony")]
+    resources: Option<String>,
 }
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct ListClass {
-    /// Path to the APK to analyze.
+    /// Local APK path; with Harmony enabled, getclass/listclass/getmanifest/findrefs/export also accept HAP or ABC.
+    #[serde(alias = "input_path")]
     apk_path: String,
     /// Optional case sensitive class or package prefix.
     prefix: Option<String>,
@@ -44,7 +52,8 @@ struct ListClass {
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct ListMethod {
-    /// Path to the APK to analyze.
+    /// Local APK path; with Harmony enabled, getclass/listclass/getmanifest/findrefs/export also accept HAP or ABC.
+    #[serde(alias = "input_path")]
     apk_path: String,
     /// Only list methods defined by this class. Accepts a dotted name or Dalvik descriptor.
     class_name: Option<String>,
@@ -62,7 +71,8 @@ struct ListMethod {
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct ListString {
-    /// Path to the APK to analyze.
+    /// Local APK path; with Harmony enabled, getclass/listclass/getmanifest/findrefs/export also accept HAP or ABC.
+    #[serde(alias = "input_path")]
     apk_path: String,
     /// Optional case insensitive substring filter over string values.
     filter: Option<String>,
@@ -81,16 +91,22 @@ struct ListString {
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct GetManifest {
-    /// Path to the APK to analyze.
+    /// Local APK path; with Harmony enabled, getclass/listclass/getmanifest/findrefs/export also accept HAP or ABC.
+    #[serde(alias = "input_path")]
     apk_path: String,
     /// Optional XML output file. Existing files are overwritten. Content is also returned.
     output: Option<String>,
+    /// Emit Harmony manifest files as a JSON object.
+    #[cfg(feature = "harmony")]
+    #[serde(default)]
+    json: bool,
 }
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct FindRefs {
-    /// Path to the APK to analyze.
+    /// Local APK path; with Harmony enabled, getclass/listclass/getmanifest/findrefs/export also accept HAP or ABC.
+    #[serde(alias = "input_path")]
     apk_path: String,
     /// Reference target and match mode.
     query: RefQuery,
@@ -101,11 +117,32 @@ struct FindRefs {
     thread: Option<usize>,
     /// Optional reference output file. Existing files are overwritten. Content is also returned.
     output: Option<String>,
+    /// Resource directory or HAP for a bare ABC file.
+    #[cfg(feature = "harmony")]
+    resources: Option<String>,
 }
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 enum RefQuery {
+    /// Match Ark literal constants by regular expression (ABC/HAP only).
+    #[cfg(feature = "harmony")]
+    Constant {
+        /// Regular expression over Ark literal values.
+        value: String
+    },
+    /// Match an exact signed decimal or hexadecimal integer (ABC/HAP only).
+    #[cfg(feature = "harmony")]
+    Integer {
+        /// Signed decimal or hexadecimal integer.
+        value: String
+    },
+    /// Match a resolved Ark instruction by regular expression (ABC/HAP only).
+    #[cfg(feature = "harmony")]
+    Code {
+        /// Regular expression over a resolved instruction.
+        value: String
+    },
     /// Find string constant references.
     String {
         /// Case sensitive string constant substring.
@@ -156,7 +193,8 @@ enum RefQuery {
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct Export {
-    /// Path to the APK to analyze.
+    /// Local APK path; with Harmony enabled, getclass/listclass/getmanifest/findrefs/export also accept HAP or ABC.
+    #[serde(alias = "input_path")]
     apk_path: String,
     /// Directory where exported Java pseudocode files are written. Content is also returned.
     output: String,
@@ -166,6 +204,12 @@ struct Export {
     classes_file: Option<String>,
     /// Positive worker count. Defaults to available CPU count.
     thread: Option<usize>,
+    /// Harmony record output mode: source (default) or asm.
+    #[cfg(feature = "harmony")]
+    abc_output: Option<String>,
+    /// Resource directory or HAP for a bare ABC file.
+    #[cfg(feature = "harmony")]
+    resources: Option<String>,
 }
 
 fn tool<I: JsonSchema + 'static>(name: &'static str, description: &'static str) -> Tool {
@@ -182,10 +226,10 @@ fn tool<I: JsonSchema + 'static>(name: &'static str, description: &'static str) 
 
 pub(super) fn tools() -> Vec<Tool> {
     vec![
-        tool::<GetClass>("getclass", "Decompile one or more APK classes to Java like source."),
+        tool::<GetClass>("getclass", "Decompile APK classes or Harmony records to Java, JavaScript, or Ark assembly."),
         tool::<ListClass>(
             "listclass",
-            "List class descriptors from every DEX in an APK.",
+            "List classes from an APK, HAP, or bare ABC when the backend is enabled.",
         ),
         tool::<ListMethod>(
             "listmethod",
@@ -197,15 +241,15 @@ pub(super) fn tools() -> Vec<Tool> {
         ),
         tool::<GetManifest>(
             "getmanifest",
-            "Decode AndroidManifest.xml to formatted XML.",
+            "Decode an APK manifest or Harmony module configuration.",
         ),
         tool::<FindRefs>(
             "findrefs",
-            "Find methods that reference strings, types, methods, or fields.",
+            "Find Android or Ark references, constants, and instructions.",
         ),
         tool::<Export>(
             "export",
-            "Export pseudocode for selected APK classes into an output directory.",
+            "Export selected Android classes or Harmony records into an output directory.",
         ),
     ]
 }
@@ -257,6 +301,8 @@ fn getclass(input: GetClass) -> Result<Vec<OsString>, String> {
         args.push("--classes-file".into());
         args.push(classes_file.into());
     }
+    #[cfg(feature = "harmony")]
+    push_harmony(&mut args, input.abc_output, input.resources);
     push_output(&mut args, input.output);
     args.push(input.apk_path.into());
     if let Some(class_name) = input.class_name {
@@ -323,6 +369,8 @@ fn liststring(input: ListString) -> Vec<OsString> {
 
 fn getmanifest(input: GetManifest) -> Vec<OsString> {
     let mut args = vec!["getmanifest".into(), input.apk_path.into()];
+    #[cfg(feature = "harmony")]
+    if input.json { args.push("--json".into()); }
     push_output(&mut args, input.output);
     args
 }
@@ -333,8 +381,16 @@ fn findrefs(input: FindRefs) -> Vec<OsString> {
     if input.json {
         args.push("--json".into());
     }
+    #[cfg(feature = "harmony")]
+    push_harmony(&mut args, None, input.resources);
     args.push(input.apk_path.into());
     match input.query {
+        #[cfg(feature = "harmony")]
+        RefQuery::Constant { value } => { args.push("constant".into()); args.push(value.into()); }
+        #[cfg(feature = "harmony")]
+        RefQuery::Integer { value } => { args.push("integer".into()); args.push(value.into()); }
+        #[cfg(feature = "harmony")]
+        RefQuery::Code { value } => { args.push("code".into()); args.push(value.into()); }
         RefQuery::String {
             value,
             max_match,
@@ -388,6 +444,8 @@ fn export(input: Export) -> Vec<OsString> {
         args.push("--classes-file".into());
         args.push(classes_file.into());
     }
+    #[cfg(feature = "harmony")]
+    push_harmony(&mut args, input.abc_output, input.resources);
     args.push(input.apk_path.into());
     args.push(input.output.into());
     args
@@ -425,6 +483,15 @@ pub(super) fn execute(query: Query) -> Result<String, String> {
     cli_args.push(OsString::from("rust_ASC"));
     cli_args.extend(query.args);
     let mut out = Vec::new();
-    crate::cli::run_from_into(cli_args, &mut out).map_err(|err| format!("Error: {err}"))?;
+    if let Err(error) = crate::cli::run_from_into(cli_args, &mut out) {
+        let partial = String::from_utf8_lossy(&out);
+        return Err(if partial.is_empty() { format!("Error: {error}") } else { format!("{partial}\nError: {error}") });
+    }
     Ok(String::from_utf8_lossy(&out).into_owned())
+}
+
+#[cfg(feature = "harmony")]
+fn push_harmony(args: &mut Vec<OsString>, mode: Option<String>, resources: Option<String>) {
+    if let Some(mode) = mode { args.push("--abc-output".into()); args.push(mode.into()); }
+    if let Some(resources) = resources { args.push("--resources".into()); args.push(resources.into()); }
 }
