@@ -6,7 +6,8 @@ rust-version = "1.88"
 license = "Apache-2.0"
 
 [features]
-default = ["mcp"]
+default = ["mcp", "harmony"]
+harmony = ["dep:asc-abc", "dep:asc-abc-dec", "dep:asc-hap"]
 mcp = ["dep:rmcp", "dep:tokio", "dep:schemars"]
 
 [profile.release]
@@ -21,6 +22,9 @@ debug = true
 opt-level = 0
 
 [dependencies]
+asc-abc = { workspace = true, optional = true }
+asc-abc-dec = { workspace = true, optional = true }
+asc-hap = { workspace = true, optional = true }
 rmcp = { version = "3.5.1", optional = true, default-features = false, features = ["server", "transport-io"] }
 tokio = { version = "1", optional = true, features = ["rt", "io-std", "time"] }
 serde = { version = "1", features = ["derive"] }

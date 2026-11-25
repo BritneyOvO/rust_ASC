@@ -1071,6 +1071,8 @@ pub fn _build_main_parser() -> Command {
         .subcommand(findrefs);
     #[cfg(feature = "mcp")]
     let command = command.subcommand(Command::new("mcp").about("Serve MCP tools over stdio."));
+    #[cfg(feature = "harmony")]
+    let command = crate::harmony::configure(command);
     command
 }
 
@@ -1090,16 +1092,23 @@ where
             return Err(error.to_string());
         }
     };
-    match matches.subcommand() {
-        #[cfg(feature = "mcp")]
-        Some(("mcp", _)) => crate::mcp::run(),
-        Some(("getclass", args)) => _handle_getclass(args, out),
-        Some(("listclass", args)) => _handle_listclass(args, out),
-        Some(("listmethod", args)) => _handle_listmethod(args, out),
-        Some(("liststring", args)) => _handle_liststring(args, out),
-        Some(("export", args)) => _handle_export(args),
-        Some(("getmanifest", args)) => _handle_getmanifest(args, out),
-        Some(("findrefs", args)) => _handle_findrefs(args, out),
+    execute_matches(&matches, &mut out)
+}
+
+fn execute_matches(matches: &ArgMatches, out: &mut dyn Write) -> Result<(), String> {
+    let (command, args) = matches.subcommand().ok_or("Unknown command")?;
+    #[cfg(feature = "mcp")]
+    if command == "mcp" { return crate::mcp::run(); }
+    #[cfg(feature = "harmony")]
+    if let Some(result) = crate::harmony::dispatch(command, args, out) { return result; }
+    match command {
+        "getclass" => _handle_getclass(args, out),
+        "listclass" => _handle_listclass(args, out),
+        "listmethod" => _handle_listmethod(args, out),
+        "liststring" => _handle_liststring(args, out),
+        "export" => _handle_export(args),
+        "getmanifest" => _handle_getmanifest(args, out),
+        "findrefs" => _handle_findrefs(args, out),
         _ => Err("Unknown command".to_owned()),
     }
 }
@@ -1109,32 +1118,15 @@ where
     I: IntoIterator<Item = T>,
     T: Into<OsString> + Clone,
 {
-    let matches = match _build_main_parser().try_get_matches_from(args) {
-        Ok(matches) => matches,
-        Err(error) => {
-            if error.kind() == clap::error::ErrorKind::DisplayVersion {
-                print!("{error}");
-                return Ok(());
-            }
-            return Err(error.to_string());
-        }
-    };
-    if let Some(("mcp", _)) = matches.subcommand() {
-        #[cfg(feature = "mcp")]
-        return crate::mcp::run();
-    }
     let stdout = io::stdout();
-    let mut out = stdout.lock();
-    match matches.subcommand() {
-        Some(("getclass", args)) => _handle_getclass(args, &mut out),
-        Some(("listclass", args)) => _handle_listclass(args, &mut out),
-        Some(("listmethod", args)) => _handle_listmethod(args, &mut out),
-        Some(("liststring", args)) => _handle_liststring(args, &mut out),
-        Some(("export", args)) => _handle_export(args),
-        Some(("getmanifest", args)) => _handle_getmanifest(args, &mut out),
-        Some(("findrefs", args)) => _handle_findrefs(args, &mut out),
-        _ => Err("Unknown command".to_owned()),
+    // MCP owns stdout for the protocol; do not hold its lock while starting the server.
+    let args: Vec<OsString> = args.into_iter().map(Into::into).collect();
+    #[cfg(feature = "mcp")]
+    if args.get(1).is_some_and(|a| a == "mcp") {
+        let matches = _build_main_parser().try_get_matches_from(args).map_err(|e| e.to_string())?;
+        return execute_matches(&matches, &mut io::sink());
     }
+    run_from_into(args, &mut stdout.lock())
 }
 
 pub fn main() {

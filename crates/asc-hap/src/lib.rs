@@ -7,6 +7,8 @@
 mod error;
 mod hap;
 mod resources;
+mod archive;
+pub use archive::{Archive, ClassOutput};
 
 pub use error::{Error, Result};
 pub use hap::{
@@ -14,3 +16,8 @@ pub use hap::{
     get_class_source, is_hap, list_classes, load_resources, module_json, DumpStats, Options, Query,
 };
 pub use resources::HapResources;
+
+/// Map a record to an escaped package path without traversing outside the output directory.
+pub fn output_path(root: &std::path::Path, record: &str, extension: &str) -> std::path::PathBuf {
+    hap::class_output_path_with_extension(root, record, extension)
+}

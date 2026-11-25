@@ -52,16 +52,12 @@ pub(crate) struct ZipEntry {
     pub(crate) comp_size: u64,
     pub(crate) uncomp_size: u64,
     local_header_off: u64,
-    index: u32,
+    pub(crate) index: u32,
 }
 
 pub fn is_hap(path: &Path) -> Result<bool> {
     let (_file, map) = open_hap(path)?;
-    // A directory this reader cannot walk is not a HAP it can use; the APK path
-    // reports the damage.
-    let Ok(entries) = zip_entries(&map) else {
-        return Ok(false);
-    };
+    let entries = zip_entries(&map)?;
     Ok(entries.iter().any(|entry| is_hap_marker(&entry.name)))
 }
 
@@ -148,7 +144,7 @@ fn package_files(path: &Path) -> Result<Vec<(String, String)>> {
     package_texts(&map, &entries, &resources)
 }
 
-fn package_texts(
+pub(crate) fn package_texts(
     map: &Mmap,
     entries: &[ZipEntry],
     resources: &crate::resources::HapResources,
@@ -490,7 +486,7 @@ fn code_entries(entries: Vec<ZipEntry>) -> Vec<ZipEntry> {
     entries
 }
 
-fn ranked_code(entries: &[ZipEntry]) -> Vec<&ZipEntry> {
+pub(crate) fn ranked_code(entries: &[ZipEntry]) -> Vec<&ZipEntry> {
     let mut ranked: Vec<&ZipEntry> = entries
         .iter()
         .filter(|entry| is_code_abc(&entry.name))
@@ -521,7 +517,7 @@ fn is_code_abc(name: &str) -> bool {
     name.ends_with(".abc") && !name.ends_with('/')
 }
 
-fn is_hap_marker(name: &str) -> bool {
+pub(crate) fn is_hap_marker(name: &str) -> bool {
     // `config.json` is only a manifest fallback after the file is already a
     // HAP. Android apps ship the same name under assets/, so it cannot mark
     // the container by itself.
@@ -576,7 +572,7 @@ fn class_output_path(out_dir: &Path, descriptor: &str) -> PathBuf {
     class_output_path_with_extension(out_dir, descriptor, "ets")
 }
 
-fn class_output_path_with_extension(out_dir: &Path, descriptor: &str, extension: &str) -> PathBuf {
+pub(crate) fn class_output_path_with_extension(out_dir: &Path, descriptor: &str, extension: &str) -> PathBuf {
     let trimmed = descriptor
         .strip_prefix('L')
         .unwrap_or(descriptor)
@@ -778,7 +774,7 @@ fn inflate_bytes(hap: &[u8], entry: ZipBytes<'_>) -> Result<Vec<u8>> {
     Ok(data)
 }
 
-fn zip_entries(data: &[u8]) -> Result<Vec<ZipEntry>> {
+pub(crate) fn zip_entries(data: &[u8]) -> Result<Vec<ZipEntry>> {
     let (start, end) = cd_bounds(data)?;
     let mut entries = Vec::new();
     let mut ptr = start;
