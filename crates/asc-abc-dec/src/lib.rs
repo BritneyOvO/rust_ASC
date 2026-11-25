@@ -10,9 +10,11 @@ mod decode;
 mod file;
 mod lower;
 mod optimize;
+mod xref;
 
 pub use codegen::Decompiler;
 pub use decode::{decode, Instruction, Opcode, Operand};
+pub use xref::{find_refs, find_refs_resolved, RefQuery, ReferenceHit, References};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum OutputMode {

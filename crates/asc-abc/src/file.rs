@@ -965,7 +965,7 @@ pub fn find_members(
 
 #[cfg(test)]
 mod tests {
-    use super::{literal_strings, region_slot};
+    use super::region_slot;
 
     fn uleb(mut value: u32) -> Vec<u8> {
         let mut out = Vec::new();

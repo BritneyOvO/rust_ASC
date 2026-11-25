@@ -187,6 +187,18 @@ pub(crate) struct Class<'a> {
     pub module: Module,
 }
 
+pub(crate) struct Field {
+    pub offset: u32,
+    pub name: String,
+    pub type_index: u16,
+    pub value: Option<FieldValue>,
+}
+
+pub(crate) enum FieldValue {
+    Integer(i64),
+    Offset(u32),
+}
+
 #[derive(Clone, Debug)]
 pub(crate) enum Literal {
     Value(String),
@@ -342,16 +354,41 @@ impl<'a> File<'a> {
         let Some(offset) = self.abc.class_offset(query)? else {
             return Ok(None);
         };
+        self.class_at(offset).map(Some)
+    }
+    pub fn class_offsets(&self) -> Result<Vec<u32>> {
+        let mut header = Reader::new(self.data(), 28)?;
+        let count = header.u32()?;
+        let offset = header.u32()?;
+        let mut index = Reader::new(self.data(), offset)?;
+        (0..count).map(|_| index.u32()).collect()
+    }
+    pub fn class_at(&self, offset: u32) -> Result<Class<'a>> {
+        self.read_class(offset, &mut |_| Ok(()))
+    }
+    pub fn class_with_fields(&self, offset: u32) -> Result<(Class<'a>, Vec<Field>)> {
+        let mut fields = Vec::new();
+        let class = self.read_class(offset, &mut |field| {
+            fields.push(field);
+            Ok(())
+        })?;
+        Ok((class, fields))
+    }
+    fn read_class(
+        &self,
+        offset: u32,
+        field: &mut impl FnMut(Field) -> Result<()>,
+    ) -> Result<Class<'a>> {
         let mut reader = Reader::new(self.data(), offset)?;
         let name = reader.string()?;
         let foreign_off = Reader::new(self.data(), 20)?.u32()?;
         let foreign_size = Reader::new(self.data(), 24)?.u32()?;
         if offset >= foreign_off && offset < foreign_off.saturating_add(foreign_size) {
-            return Ok(Some(Class {
+            return Ok(Class {
                 name,
                 methods: Vec::new(),
                 module: Module::default(),
-            }));
+            });
         }
         reader.u32()?;
         reader.uleb()?;
@@ -379,19 +416,25 @@ impl<'a> File<'a> {
         }
         let mut module = Module::default();
         for _ in 0..fields {
-            reader.bytes(4)?;
+            let field_offset = u32::try_from(reader.pos)
+                .map_err(|_| Error::invalid("field offset exceeds u32"))?;
+            reader.u16()?;
+            let type_index = reader.u16()?;
             let field_name = self.string(reader.u32()?)?;
             reader.uleb()?;
+            let mut value = None;
             loop {
                 match reader.byte()? {
                     0 => break,
                     1 => {
-                        reader.sleb()?;
+                        value = Some(FieldValue::Integer(reader.sleb()?));
                     }
                     2 => {
                         let offset = reader.u32()?;
                         if field_name == "moduleRecordIdx" {
                             module = self.module(offset)?;
+                        } else {
+                            value = Some(FieldValue::Offset(offset));
                         }
                     }
                     3..=6 => {
@@ -400,6 +443,12 @@ impl<'a> File<'a> {
                     tag => return Err(Error::invalid(format!("unknown field tag {tag:#x}"))),
                 }
             }
+            field(Field {
+                offset: field_offset,
+                name: field_name,
+                type_index,
+                value,
+            })?;
         }
         let mut result = Vec::new();
         let mut budget = SizeBudget::new("class method metadata");
@@ -424,11 +473,11 @@ impl<'a> File<'a> {
             method.charge(&mut budget)?;
             result.push(method);
         }
-        Ok(Some(Class {
+        Ok(Class {
             name,
             methods: result,
             module,
-        }))
+        })
     }
     fn module(&self, offset: u32) -> Result<Module> {
         let mut reader = Reader::new(self.data(), offset)?;
@@ -506,6 +555,16 @@ impl<'a> File<'a> {
         Ok(module)
     }
     pub fn literals(&self, offset: u32) -> Result<Vec<Literal>> {
+        self.read_literals(offset, &mut |_, value| value)
+    }
+    pub fn literal_entries(&self, offset: u32) -> Result<Vec<(u8, Literal)>> {
+        self.read_literals(offset, &mut |tag, value| (tag, value))
+    }
+    fn read_literals<T>(
+        &self,
+        offset: u32,
+        make: &mut impl FnMut(u8, Literal) -> T,
+    ) -> Result<Vec<T>> {
         let mut reader = Reader::new(self.data(), offset)?;
         let entries = reader.u32()?;
         if entries % 2 != 0 {
@@ -540,17 +599,23 @@ impl<'a> File<'a> {
                 }
                 0x0a..=0x15 => {
                     let pointer = reader.u32()?;
-                    values.extend(self.typed_array(pointer, tag, &mut budget)?);
+                    values.extend(self.typed_array(pointer, tag, &mut budget, make)?);
                     break;
                 }
                 _ => return Err(Error::invalid(format!("unknown literal tag {tag:#x}"))),
             };
             value.charge(&mut budget)?;
-            values.push(value);
+            values.push(make(tag, value));
         }
         Ok(values)
     }
-    fn typed_array(&self, offset: u32, tag: u8, budget: &mut SizeBudget) -> Result<Vec<Literal>> {
+    fn typed_array<T>(
+        &self,
+        offset: u32,
+        tag: u8,
+        budget: &mut SizeBudget,
+        make: &mut impl FnMut(u8, Literal) -> T,
+    ) -> Result<Vec<T>> {
         let mut reader = Reader::new(self.data(), offset)?;
         let stride = match tag {
             0x0a..=0x0c => 1,
@@ -576,14 +641,14 @@ impl<'a> File<'a> {
                 0x15 => {
                     let value = Literal::String(self.string(reader.u32()?)?);
                     value.charge(budget)?;
-                    values.push(value);
+                    values.push(make(tag, value));
                     continue;
                 }
                 _ => return Err(Error::invalid("invalid typed array tag")),
             };
             let value = Literal::Value(value);
             value.charge(budget)?;
-            values.push(value);
+            values.push(make(tag, value));
         }
         Ok(values)
     }
