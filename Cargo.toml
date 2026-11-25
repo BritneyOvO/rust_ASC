@@ -46,7 +46,7 @@ sha1 = "0.10"
 tempfile = "3"
 
 [workspace]
-members = [".", "crates/asc-abc"]
+members = [".", "crates/asc-abc", "crates/asc-abc-dec"]
 default-members = ["."]
 exclude = ["radguard"]
 resolver = "3"
@@ -65,3 +65,4 @@ flate2 = { version = "1", default-features = false, features = ["zlib-rs"] }
 memmap2 = "0.9"
 crc32fast = "1.5.2"
 asc-abc = { path = "crates/asc-abc" }
+asc-abc-dec = { path = "crates/asc-abc-dec" }

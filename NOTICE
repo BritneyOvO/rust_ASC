@@ -4,3 +4,12 @@ https://github.com/ReverseToolkit/ASC_rs
 https://github.com/MG1937/ASC
 The original and derivative works are licensed under Apache-2.0.
 See LICENSE.
+
+ABC disassembly and JavaScript recovery are adapted from xpanda-core by jmp0,
+revision 3ffb7b476b17066dc8bed0914caeea1f529b1e51 (Apache-2.0).
+https://github.com/asmjmp0/xpanda
+The four test fixtures retain their attribution in tests/fixtures/README.md.
+Ark instruction definitions derive from OpenHarmony's ISA:
+Copyright (c) 2021-2026 Huawei Device Co., Ltd. (Apache-2.0).
+Native JavaScript AST operations use Oxc (MIT).
+https://github.com/oxc-project/oxc
