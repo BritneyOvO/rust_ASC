@@ -2,6 +2,7 @@
 name = "rust_ASC"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
 license = "Apache-2.0"
 
 [features]
@@ -43,3 +44,24 @@ regex = "1"
 adler2 = "2"
 sha1 = "0.10"
 tempfile = "3"
+
+[workspace]
+members = [".", "crates/asc-abc"]
+default-members = ["."]
+exclude = ["radguard"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+license = "Apache-2.0"
+repository = "https://github.com/BritneyOvO/rust_ASC"
+
+[workspace.dependencies]
+regex = "1"
+thiserror = "2.0.21"
+flate2 = { version = "1", default-features = false, features = ["zlib-rs"] }
+memmap2 = "0.9"
+crc32fast = "1.5.2"
+asc-abc = { path = "crates/asc-abc" }

@@ -1,0 +1,6 @@
+HarmonyOS support is adapted from ReverseToolkit/ASC_rs, revision
+bca5c2a62dee93c315067a40aa016c7c5a6ad156, a Rust derivative of ASC by MG1937.
+https://github.com/ReverseToolkit/ASC_rs
+https://github.com/MG1937/ASC
+The original and derivative works are licensed under Apache-2.0.
+See LICENSE.
