@@ -37,3 +37,30 @@ pub(super) fn json(value: &impl Serialize) -> Result<String, String> {
         .map(|text| text + "\n")
         .map_err(|error| format!("cannot serialize JSON: {error}"))
 }
+
+#[derive(Serialize)]
+pub(super) struct ReferenceOutput<'a> {
+    backend: &'static str,
+    member: &'a str,
+    caller: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pc: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    opcode: Option<&'a str>,
+    kind: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    resolution: Option<&'a str>,
+    matched: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    literal: Option<(u32, usize)>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    metadata: Option<u32>,
+}
+
+impl<'a> From<&'a asc_abc_dec::ReferenceHit> for ReferenceOutput<'a> {
+    fn from(hit: &'a asc_abc_dec::ReferenceHit) -> Self {
+        Self { backend: "harmony", member: &hit.member, caller: &hit.caller, pc: hit.pc,
+            opcode: hit.opcode, kind: hit.kind, resolution: hit.resolution, matched: &hit.matched,
+            literal: hit.literal, metadata: hit.metadata }
+    }
+}

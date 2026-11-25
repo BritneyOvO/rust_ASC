@@ -3,7 +3,8 @@ use std::io::Write;
 use std::path::Path;
 
 use asc_abc_dec::{Decompiler, OutputMode};
-use asc_hap::{HapResources, Options, Query};
+use asc_hap::HapResources;
+use asc_abc_dec::{RefQuery as Query, References};
 use clap::ArgMatches;
 
 use crate::input::ArtifactKind;
@@ -28,7 +29,6 @@ fn execute(command: &str, args: &ArgMatches, path: &Path, kind: ArtifactKind, ou
         .unwrap_or_else(|| std::thread::available_parallelism().map_or(1, usize::from));
     if threads == 0 { return Err("Worker count must be greater than zero".into()); }
 
-    let options = Options { threads, debug: args.get_flag("debug") };
     let output = args.try_get_one::<String>("output").ok().flatten();
     let json = args.try_get_one::<bool>("json").ok().flatten().copied().unwrap_or(false);
     let bytes = if kind == ArtifactKind::Abc {
@@ -107,7 +107,6 @@ fn execute(command: &str, args: &ArgMatches, path: &Path, kind: ArtifactKind, ou
         }
         "export" => export(args, path, bytes.as_deref(), &table, threads, out),
         "findrefs" => {
-            if json { return Err("structured Harmony references require the instruction query engine".into()); }
             let (name, query) = args.subcommand().ok_or("missing reference query")?;
             let value = query.try_get_one::<String>("value").ok().flatten().map(String::as_str);
             let class = query.try_get_one::<String>("class_name").ok().flatten().map(String::as_str);
@@ -115,29 +114,45 @@ fn execute(command: &str, args: &ArgMatches, path: &Path, kind: ArtifactKind, ou
             let pattern = query.try_get_one::<String>("name").ok().flatten().map(String::as_str);
             let q = match name {
                 "string" => Query::String(value.ok_or("missing string pattern")?),
+                "constant" => Query::Constant(value.ok_or("missing constant pattern")?),
+                "integer" => Query::Integer(value.ok_or("missing integer")?),
+                "code" => Query::Code(value.ok_or("missing instruction pattern")?),
                 "type" => Query::Type(value.ok_or("missing type pattern")?),
                 "method" => Query::Method { name: pattern, class_name: class },
                 "field" => Query::Field { name: pattern, class_name: class },
                 _ => return Err(format!("{name} is not supported for ABC or HAP")),
             };
-            let lines = if let Some(bytes) = &bytes {
-                bare_refs(bytes, path, q, &table)?
-            } else { asc_hap::find_refs(path, q, &options).map_err(|e| e.to_string())? };
-            let text = if lines.is_empty() { String::new() } else { lines.join("\n") + "\n" };
+            let mut hits = Vec::new();
+            if let Some(bytes) = &bytes {
+                hits = References::new(bytes).and_then(|mut r| r.find_records_resolved(&path.display().to_string(), q, &|raw| table.resolve_literal(raw))).map_err(|e| e.to_string())?;
+            } else {
+                let archive = asc_hap::Archive::open(path).map_err(|e| e.to_string())?;
+                archive.for_each_abc(|member, _, bytes| {
+                    hits.extend(References::new(bytes)?.find_records_resolved(member, q, &|raw| archive.resources().resolve_literal(raw))?);
+                    Ok(())
+                }).map_err(|e| e.to_string())?;
+            }
+            let text = if json { output::json(&hits.iter().map(output::ReferenceOutput::from).collect::<Vec<_>>())? }
+                else {
+                    let maximum = query.try_get_one::<usize>("max_match").ok().flatten().copied();
+                    let no_match = query.try_get_one::<bool>("no_match").ok().flatten() == Some(&true);
+                    hits.iter().map(|hit| {
+                        let mut hit = hit.clone();
+                        if let Some(maximum) = maximum {
+                            let truncated: String = hit.matched.chars().take(maximum).collect();
+                            if truncated.len() < hit.matched.len() { hit.matched = truncated + "..."; }
+                        }
+                        let mut text = hit.to_string();
+                        if no_match {
+                            text = text.rsplit_once(" | matched=(").map_or_else(|| text.clone(), |(head, _)| head.to_owned());
+                        }
+                        text + "\n"
+                    }).collect()
+                };
             output::emit(&text, query.get_one::<String>("output"), true, out)
         }
         _ => Err(format!("{command} is not supported for ABC or HAP")),
     }
-}
-
-fn bare_refs(bytes: &[u8], path: &Path, query: Query<'_>, table: &HapResources) -> Result<Vec<String>, String> {
-    let file = path.display().to_string();
-    match query {
-        Query::String(pattern) => asc_abc::find_strings_resolved(bytes, &file, pattern, &|raw| table.resolve_literal(raw)),
-        Query::Type(pattern) => asc_abc::find_types(bytes, &file, pattern),
-        Query::Method { name, class_name } => asc_abc::find_members(bytes, &file, asc_abc::MemberKind::Method, name.unwrap_or(".*"), class_name),
-        Query::Field { name, class_name } => asc_abc::find_members(bytes, &file, asc_abc::MemberKind::Field, name.unwrap_or(".*"), class_name),
-    }.map_err(|e| e.to_string())
 }
 
 fn output_mode(args: &ArgMatches) -> OutputMode {

@@ -86,3 +86,25 @@ fn filtered_export_does_not_render_unselected_records_and_keeps_partial_results(
     assert!(rust_ASC::cli::run_from_into(["rust_ASC", "export", hap.to_str().unwrap(), no_match.to_str().unwrap(),
         "--prefix", "absent"], &mut out).is_err());
 }
+
+#[test]
+fn instruction_and_constant_queries_return_structured_bytecode_locations() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("modules.abc");
+    std::fs::write(&input, CLASS).unwrap();
+    let input = input.to_str().unwrap();
+    for (kind, pattern) in [("code", "lda.str"), ("constant", ".*"), ("integer", "0")] {
+        let mut out = Vec::new();
+        rust_ASC::cli::run_from_into(["rust_ASC", "findrefs", input, kind, pattern, "--json"], &mut out).unwrap();
+        let rows: Value = serde_json::from_slice(&out).unwrap();
+        if kind != "integer" { assert!(!rows.as_array().unwrap().is_empty()); }
+        for row in rows.as_array().unwrap() {
+            assert_eq!(row["backend"], "harmony");
+            assert_eq!(row["member"], input);
+            assert!(row["matched"].is_string());
+        }
+    }
+    let mut out = Vec::new();
+    rust_ASC::cli::run_from_into(["rust_ASC", "findrefs", input, "integer", "-0x1", "--json"], &mut out).unwrap();
+    assert!(rust_ASC::cli::run_from_into(["rust_ASC", "findrefs", input, "code", "["], &mut out).unwrap_err().contains("regex"));
+}
