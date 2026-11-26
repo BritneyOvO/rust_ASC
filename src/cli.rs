@@ -805,7 +805,7 @@ fn member_parser(name: &'static str, noun: &'static str, examples: &'static str)
 pub fn _build_main_parser() -> Command {
     let findrefs = common_args(
         Command::new("findrefs")
-            .about("Find code references for string/type/method/field across all DEX entries in APK.")
+            .about("Find Android DEX or Harmony Ark references in an APK, HAP, or ABC input.")
             .after_help(
                 "examples:\n  rust_ASC findrefs app.apk string token -o string_refs.txt\n  \
                  rust_ASC findrefs app.apk type com.poc.Main\n  \
@@ -815,7 +815,7 @@ pub fn _build_main_parser() -> Command {
                  rust_ASC findrefs app.apk method notify --class poc --fuzzy-class -o method_refs.txt\n  \
                  rust_ASC findrefs app.apk field changeQuickRedirect -o field_refs.txt",
             )
-            .arg(Arg::new("apk_path").required(true).help("Path to the input APK file."))
+            .arg(Arg::new("apk_path").required(true).help("Path to an APK, HAP/HSP, or bare ABC input."))
             .arg(
                 Arg::new("json")
                     .long("json")
@@ -926,7 +926,7 @@ pub fn _build_main_parser() -> Command {
         .subcommand_required(true)
         .subcommand(common_args(
             Command::new("getclass")
-                .about("Locate one or more classes in APK and decompile them in a single process.")
+                .about("Decompile one or more Android classes or Harmony records in one process.")
                 .arg(
                     Arg::new("output")
                         .short('o')
@@ -944,16 +944,16 @@ pub fn _build_main_parser() -> Command {
                         .action(ArgAction::SetTrue)
                         .help("Emit JSON with source and member reference metadata."),
                 )
-                .arg(Arg::new("apk_path").required(true).help("Path to the input APK file."))
+                .arg(Arg::new("apk_path").required(true).help("Path to an APK, HAP/HSP, or bare ABC input."))
                 .arg(
                     Arg::new("dalvik_class")
                         .num_args(0..)
-                        .help("The Dalvik class name(s) to decompile (e.g., Lcom/poc/Main; or com.poc.Main)."),
+                        .help("Android class name(s) or exact Harmony record name(s) to decompile."),
                 ),
         ))
         .subcommand(common_args(
             Command::new("listclass")
-                .about("List classes across all DEX entries; use --prefix to filter by package/class prefix.")
+                .about("List Android classes or Harmony records; use --prefix to filter the names.")
                 .arg(
                     Arg::new("prefix")
                         .long("prefix")
@@ -971,7 +971,7 @@ pub fn _build_main_parser() -> Command {
                         .action(ArgAction::SetTrue)
                         .help("Emit class descriptors as a JSON array."),
                 )
-                .arg(Arg::new("apk_path").required(true).help("Path to the input APK file.")),
+                .arg(Arg::new("apk_path").required(true).help("Path to an APK, HAP/HSP, or bare ABC input.")),
         ))
         .subcommand(common_args(
             Command::new("listmethod")
@@ -1033,12 +1033,12 @@ pub fn _build_main_parser() -> Command {
         ))
         .subcommand(common_args(
             Command::new("export")
-                .about("Export pseudocode for selected classes in an APK into an output directory.")
-                .arg(Arg::new("apk_path").required(true).help("Path to the input APK file."))
+                .about("Export selected Android classes or Harmony records into an output directory.")
+                .arg(Arg::new("apk_path").required(true).help("Path to an APK, HAP/HSP, or bare ABC input."))
                 .arg(
                     Arg::new("output_directory")
                         .required(true)
-                        .help("Directory where exported .java pseudocode files are written."),
+                        .help("Directory where exported .java, .js, or .pa files are written."),
                 )
                 .arg(
                     Arg::new("prefix")
@@ -1053,7 +1053,7 @@ pub fn _build_main_parser() -> Command {
         ))
         .subcommand(
             Command::new("getmanifest")
-                .about("Decode AndroidManifest.xml from APK and print it as XML.")
+                .about("Decode AndroidManifest.xml or Harmony module/config metadata.")
                 .arg(
                     Arg::new("debug")
                         .long("debug")
@@ -1066,7 +1066,7 @@ pub fn _build_main_parser() -> Command {
                         .long("output")
                         .help("Also write decoded manifest to this file."),
                 )
-                .arg(Arg::new("apk_path").required(true).help("Path to the input APK file.")),
+                .arg(Arg::new("apk_path").required(true).help("Path to an APK or HAP/HSP input.")),
         )
         .subcommand(findrefs);
     #[cfg(feature = "mcp")]

@@ -10,8 +10,8 @@ use regex::Regex;
 
 use crate::{Error, Result};
 use constants::integer;
-use flow::{Edge, Flow};
 use constants::Site;
+use flow::{Edge, Flow};
 use index::Index;
 
 #[derive(Clone, Copy, Debug)]
@@ -48,20 +48,39 @@ pub struct ReferenceHit {
 
 impl ReferenceHit {
     fn definition(member: &str, caller: String, matched: String) -> Self {
-        Self { member: member.into(), caller, pc: None, opcode: None, kind: "definition",
-            resolution: None, matched, literal: None, metadata: None }
+        Self {
+            member: member.into(),
+            caller,
+            pc: None,
+            opcode: None,
+            kind: "definition",
+            resolution: None,
+            matched,
+            literal: None,
+            metadata: None,
+        }
     }
 }
 
 impl std::fmt::Display for ReferenceHit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} | {}", self.member, self.caller)?;
-        if let Some(pc) = self.pc { write!(f, " | pc={pc:#x}")?; }
-        if let Some(opcode) = self.opcode { write!(f, " | opcode={opcode}")?; }
-        if let Some((offset, index)) = self.literal { write!(f, " | literal@{offset:#x}[{index}]")?; }
-        if let Some(offset) = self.metadata { write!(f, " | metadata@{offset:#x}")?; }
+        if let Some(pc) = self.pc {
+            write!(f, " | pc={pc:#x}")?;
+        }
+        if let Some(opcode) = self.opcode {
+            write!(f, " | opcode={opcode}")?;
+        }
+        if let Some((offset, index)) = self.literal {
+            write!(f, " | literal@{offset:#x}[{index}]")?;
+        }
+        if let Some(offset) = self.metadata {
+            write!(f, " | metadata@{offset:#x}")?;
+        }
         write!(f, " | kind={}", self.kind)?;
-        if let Some(resolution) = self.resolution { write!(f, " | resolution={resolution}")?; }
+        if let Some(resolution) = self.resolution {
+            write!(f, " | resolution={resolution}")?;
+        }
         write!(f, " | matched=({})", escaped(&self.matched))
     }
 }
@@ -95,7 +114,8 @@ impl<'a> References<'a> {
         })
     }
     pub fn find(&mut self, file: &str, query: RefQuery<'_>) -> Result<Vec<String>> {
-        self.search(file, query, None).map(|hits| hits.into_iter().map(|hit| hit.to_string()).collect())
+        self.search(file, query, None)
+            .map(|hits| hits.into_iter().map(|hit| hit.to_string()).collect())
     }
     pub fn find_resolved(
         &mut self,
@@ -103,12 +123,18 @@ impl<'a> References<'a> {
         query: RefQuery<'_>,
         resolve: &Resolve<'_>,
     ) -> Result<Vec<String>> {
-        self.search(file, query, Some(resolve)).map(|hits| hits.into_iter().map(|hit| hit.to_string()).collect())
+        self.search(file, query, Some(resolve))
+            .map(|hits| hits.into_iter().map(|hit| hit.to_string()).collect())
     }
     pub fn find_records(&mut self, file: &str, query: RefQuery<'_>) -> Result<Vec<ReferenceHit>> {
         self.search(file, query, None)
     }
-    pub fn find_records_resolved(&mut self, file: &str, query: RefQuery<'_>, resolve: &Resolve<'_>) -> Result<Vec<ReferenceHit>> {
+    pub fn find_records_resolved(
+        &mut self,
+        file: &str,
+        query: RefQuery<'_>,
+        resolve: &Resolve<'_>,
+    ) -> Result<Vec<ReferenceHit>> {
         self.search(file, query, Some(resolve))
     }
     fn search(
@@ -153,12 +179,40 @@ impl<'a> References<'a> {
                     if hit {
                         let text = resolved.as_deref().unwrap_or(&value.text);
                         let (caller, pc, opcode, literal, metadata) = match &value.site {
-                            Site::Instruction { method, pc, opcode, literal } => (self.index.method_name(*method), Some(*pc), Some(*opcode), *literal, None),
-                            Site::Literal { offset, index } => (format!("literal@{offset:#x}[{index}]"), None, None, None, None),
-                            Site::Metadata { owner, offset } => (owner.clone(), None, None, None, Some(*offset)),
+                            Site::Instruction {
+                                method,
+                                pc,
+                                opcode,
+                                literal,
+                            } => (
+                                self.index.method_name(*method),
+                                Some(*pc),
+                                Some(*opcode),
+                                *literal,
+                                None,
+                            ),
+                            Site::Literal { offset, index } => (
+                                format!("literal@{offset:#x}[{index}]"),
+                                None,
+                                None,
+                                None,
+                                None,
+                            ),
+                            Site::Metadata { owner, offset } => {
+                                (owner.clone(), None, None, None, Some(*offset))
+                            }
                         };
-                        lines.insert(ReferenceHit { member: file.into(), caller, pc, opcode, literal, metadata,
-                            kind: value.kind.name(), resolution: None, matched: text.into() });
+                        lines.insert(ReferenceHit {
+                            member: file.into(),
+                            caller,
+                            pc,
+                            opcode,
+                            literal,
+                            metadata,
+                            kind: value.kind.name(),
+                            resolution: None,
+                            matched: text.into(),
+                        });
                     }
                 }
             }
@@ -168,9 +222,17 @@ impl<'a> References<'a> {
                     for ins in &method.instructions {
                         let code = self.index.assembly(ins)?;
                         if regex.is_match(&code) {
-                            lines.insert(ReferenceHit { member: file.into(), caller: self.index.method_name(offset),
-                                pc: Some(ins.ins.pc), opcode: Some(ins.ins.opcode.name), kind: "code", resolution: None,
-                                matched: code, literal: None, metadata: None });
+                            lines.insert(ReferenceHit {
+                                member: file.into(),
+                                caller: self.index.method_name(offset),
+                                pc: Some(ins.ins.pc),
+                                opcode: Some(ins.ins.opcode.name),
+                                kind: "code",
+                                resolution: None,
+                                matched: code,
+                                literal: None,
+                                metadata: None,
+                            });
                         }
                     }
                 }
@@ -183,9 +245,17 @@ impl<'a> References<'a> {
                 for edge in self.edges.as_ref().expect("caller graph initialized") {
                     let target = self.index.target_name(&edge.target);
                     if matcher.matches(&self.index, &edge.target, edge.kind) {
-                        lines.insert(ReferenceHit { member: file.into(), caller: self.index.method_name(edge.caller),
-                            pc: Some(edge.pc), opcode: Some(edge.opcode), kind: edge.kind.name(),
-                            resolution: Some(edge.target.resolution()), matched: target, literal: None, metadata: None });
+                        lines.insert(ReferenceHit {
+                            member: file.into(),
+                            caller: self.index.method_name(edge.caller),
+                            pc: Some(edge.pc),
+                            opcode: Some(edge.opcode),
+                            kind: edge.kind.name(),
+                            resolution: Some(edge.target.resolution()),
+                            matched: target,
+                            literal: None,
+                            metadata: None,
+                        });
                     }
                 }
                 // Definitions remain searchable, but are explicitly distinguished from use sites.

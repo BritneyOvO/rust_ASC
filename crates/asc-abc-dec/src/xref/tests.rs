@@ -272,13 +272,31 @@ fn closure_scopes_do_not_mix_same_numbered_slots() {
 #[test]
 fn module_resolution_preserves_normalized_paths_and_rejects_ambiguity() {
     let mut index = Index::new(HX360E).unwrap();
-    let source = index.records.iter().position(|r| r.name.contains("GamePage")).unwrap();
-    let target = index.records.iter().position(|r| r.name.contains("AppLog")).unwrap();
+    let source = index
+        .records
+        .iter()
+        .position(|r| r.name.contains("GamePage"))
+        .unwrap();
+    let target = index
+        .records
+        .iter()
+        .position(|r| r.name.contains("AppLog"))
+        .unwrap();
     let path = "@normalized:N&&&entry/src/main/ets/common/AppLog&";
     assert_eq!(Flow::new(&index).record(source, path), Some(target));
-    assert_eq!(Flow::new(&index).record(source, "../common/AppLog.ets"), Some(target));
-    assert_eq!(Flow::new(&index).record(source, "@normalized:N&&&missing/AppLog&"), None);
-    let duplicate = Class { name: index.records[target].name.clone(), methods: Vec::new(), module: Module::default() };
+    assert_eq!(
+        Flow::new(&index).record(source, "../common/AppLog.ets"),
+        Some(target)
+    );
+    assert_eq!(
+        Flow::new(&index).record(source, "@normalized:N&&&missing/AppLog&"),
+        None
+    );
+    let duplicate = Class {
+        name: index.records[target].name.clone(),
+        methods: Vec::new(),
+        module: Module::default(),
+    };
     index.records.push(duplicate);
     assert_eq!(Flow::new(&index).record(source, path), None);
 }
@@ -286,10 +304,19 @@ fn module_resolution_preserves_normalized_paths_and_rejects_ambiguity() {
 #[test]
 fn structured_references_preserve_literal_text_without_parsing_display_lines() {
     let mut refs = References::new(CLASS).unwrap();
-    let hits = refs.find_records("input | special.abc", RefQuery::Code("lda.str")).unwrap();
+    let hits = refs
+        .find_records("input | special.abc", RefQuery::Code("lda.str"))
+        .unwrap();
     assert!(!hits.is_empty());
     assert!(hits.iter().all(|hit| hit.member == "input | special.abc"));
-    assert!(hits.iter().all(|hit| hit.pc.is_some() && hit.opcode.is_some()));
-    let text = refs.find("input | special.abc", RefQuery::Code("lda.str")).unwrap();
-    assert_eq!(text, hits.iter().map(ToString::to_string).collect::<Vec<_>>());
+    assert!(hits
+        .iter()
+        .all(|hit| hit.pc.is_some() && hit.opcode.is_some()));
+    let text = refs
+        .find("input | special.abc", RefQuery::Code("lda.str"))
+        .unwrap();
+    assert_eq!(
+        text,
+        hits.iter().map(ToString::to_string).collect::<Vec<_>>()
+    );
 }

@@ -1182,13 +1182,19 @@ impl<'i, 'a> Flow<'i, 'a> {
         // Normalized module URLs carry flags before the path and version fields after it.
         // Preserve the actual path instead of cutting at the first ampersand in the prefix.
         let clean = |text: &str| {
-            let text = text.strip_prefix("@normalized:")
+            let text = text
+                .strip_prefix("@normalized:")
                 .and_then(|text| text.split_once("&&&").map(|(_, path)| path))
                 .unwrap_or(text);
-            let text = text.strip_prefix('L').unwrap_or(text)
-                .trim_end_matches(';').trim_matches('&');
+            let text = text
+                .strip_prefix('L')
+                .unwrap_or(text)
+                .trim_end_matches(';')
+                .trim_matches('&');
             let text = text.split('&').next().unwrap_or(text);
-            text.trim_end_matches(".ets").trim_end_matches(".js").to_string()
+            text.trim_end_matches(".ets")
+                .trim_end_matches(".js")
+                .to_string()
         };
         let path = clean(path);
         let source = clean(&self.index.records[source].name);
@@ -1213,13 +1219,22 @@ impl<'i, 'a> Flow<'i, 'a> {
         } else {
             clean(&path)
         };
-        let mut matches = self.index.records.iter().enumerate().filter_map(|(index, record)| {
-            let record = clean(&record.name);
-            (record == resolved || record == clean(&path)).then_some(index)
-        });
+        let mut matches = self
+            .index
+            .records
+            .iter()
+            .enumerate()
+            .filter_map(|(index, record)| {
+                let record = clean(&record.name);
+                (record == resolved || record == clean(&path)).then_some(index)
+            });
         let first = matches.next()?;
         // An ambiguous import remains symbolic rather than guessing one definition.
-        if matches.next().is_some() { None } else { Some(first) }
+        if matches.next().is_some() {
+            None
+        } else {
+            Some(first)
+        }
     }
 }
 

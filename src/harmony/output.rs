@@ -27,7 +27,8 @@ pub(super) fn emit(
         fs::write(path, text).map_err(|error| format!("cannot write {path}: {error}"))?;
     }
     if output.is_none() || also_stdout {
-        out.write_all(text.as_bytes()).map_err(|error| format!("cannot write output: {error}"))?;
+        out.write_all(text.as_bytes())
+            .map_err(|error| format!("cannot write output: {error}"))?;
     }
     Ok(())
 }
@@ -59,8 +60,17 @@ pub(super) struct ReferenceOutput<'a> {
 
 impl<'a> From<&'a asc_abc_dec::ReferenceHit> for ReferenceOutput<'a> {
     fn from(hit: &'a asc_abc_dec::ReferenceHit) -> Self {
-        Self { backend: "harmony", member: &hit.member, caller: &hit.caller, pc: hit.pc,
-            opcode: hit.opcode, kind: hit.kind, resolution: hit.resolution, matched: &hit.matched,
-            literal: hit.literal, metadata: hit.metadata }
+        Self {
+            backend: "harmony",
+            member: &hit.member,
+            caller: &hit.caller,
+            pc: hit.pc,
+            opcode: hit.opcode,
+            kind: hit.kind,
+            resolution: hit.resolution,
+            matched: &hit.matched,
+            literal: hit.literal,
+            metadata: hit.metadata,
+        }
     }
 }

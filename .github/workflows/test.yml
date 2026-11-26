@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - dev
+      - integrate/harmonyos
   pull_request:
   workflow_dispatch:
 
@@ -35,4 +36,11 @@ jobs:
         run: cargo build --release --locked
 
       - name: Run release tests
-        run: cargo test --release --locked
+        run: cargo test --workspace --all-features --release --locked
+
+      - name: Verify Android-only CLI
+        run: cargo test -p rust_ASC --no-default-features --locked
+      - name: Verify Harmony-only CLI
+        run: cargo test -p rust_ASC --no-default-features --features harmony --locked
+      - name: Verify Android MCP
+        run: cargo test -p rust_ASC --no-default-features --features mcp --locked

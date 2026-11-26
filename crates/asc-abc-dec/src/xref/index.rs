@@ -578,27 +578,45 @@ impl<'a> Index<'a> {
                         .as_deref()
                         .is_none_or(|query| self.class_matches(*record, None, query))
                 {
-                    lines.insert(ReferenceHit::definition(file,
-                        format!("{}->{}@{:#x}", self.records[*record].name, field.name, field.offset), field.name.clone()));
+                    lines.insert(ReferenceHit::definition(
+                        file,
+                        format!(
+                            "{}->{}@{:#x}",
+                            self.records[*record].name, field.name, field.offset
+                        ),
+                        field.name.clone(),
+                    ));
                 }
             }
         }
         for &off in self.methods.keys() {
             let target = Target::Method(off);
             if matcher.matches(self, &target, EdgeKind::Function) {
-                lines.insert(ReferenceHit::definition(file, self.method_name(off), self.method_name(off)));
+                lines.insert(ReferenceHit::definition(
+                    file,
+                    self.method_name(off),
+                    self.method_name(off),
+                ));
             }
         }
         for (&off, class) in &self.classes {
             let target = Target::Class(off);
             if matcher.matches(self, &target, EdgeKind::Class) {
-                lines.insert(ReferenceHit::definition(file, self.records[class.record].name.clone(), self.target_name(&target)));
+                lines.insert(ReferenceHit::definition(
+                    file,
+                    self.records[class.record].name.clone(),
+                    self.target_name(&target),
+                ));
             }
         }
         for record in 0..self.records.len() {
             let target = Target::Record(record);
             if matcher.matches(self, &target, EdgeKind::Class) {
-                lines.insert(ReferenceHit::definition(file, self.records[record].name.clone(), self.records[record].name.clone()));
+                lines.insert(ReferenceHit::definition(
+                    file,
+                    self.records[record].name.clone(),
+                    self.records[record].name.clone(),
+                ));
             }
         }
     }

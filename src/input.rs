@@ -14,7 +14,8 @@ impl ArtifactKind {
         let mut file = File::open(path)
             .map_err(|error| format!("cannot open APK/input {}: {error}", path.display()))?;
         let mut magic = [0; 8];
-        let count = file.read(&mut magic)
+        let count = file
+            .read(&mut magic)
             .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
         if count == 8 && asc_abc::is_abc(&magic) {
             return Ok(Self::Abc);
@@ -23,7 +24,9 @@ impl ArtifactKind {
             return Ok(Self::Android);
         }
         if asc_hap::Archive::open(path)
-            .map_err(|error| format!("invalid ZIP archive {}: {error}", path.display()))?.is_hap() {
+            .map_err(|error| format!("invalid ZIP archive {}: {error}", path.display()))?
+            .is_hap()
+        {
             Ok(Self::Hap)
         } else {
             Ok(Self::Android)

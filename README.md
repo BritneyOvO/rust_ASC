@@ -1,8 +1,8 @@
 # rust_ASC
 
-**rust_ASC is a stateless Android APK and DEX decompiler with millisecond cross-reference search, written in Rust.** It queries the compiled artifact directly instead of building a global index, so there is no preprocessing step, no persistent cache, and no multi-gigabyte memory footprint.
+**rust_ASC is a stateless Android APK/DEX and HarmonyOS HAP/ABC analyzer with fast cross-reference search and native decompilation, written in Rust.** It queries compiled artifacts directly instead of building a global index, so there is no preprocessing step or persistent disk cache.
 
-It is the Rust implementation of [MG1937/ASC](https://github.com/MG1937/ASC), the Python reference project, and preserves the same source layout, data structures, control flow and runtime behavior. On the CLI workloads below it is approximately **10× faster** than the Python version.
+The Android backend is the Rust implementation of [MG1937/ASC](https://github.com/MG1937/ASC), the Python reference project, and preserves the same source layout, data structures, control flow and runtime behavior. The HarmonyOS backend is adapted from [ReverseToolkit/ASC_rs](https://github.com/ReverseToolkit/ASC_rs) and uses a native Rust Ark disassembler and JavaScript recovery pipeline adapted from [asmjmp0/xpanda](https://github.com/asmjmp0/xpanda). See [NOTICE](NOTICE) for fixed source revisions and attribution.
 
 Presented at Black Hat Europe Arsenal: [Droid ASC: R8 Compiler Optimization as a DeCompiler Primitive](https://blackhat.com/europe/arsenal/schedule/index.html#droid-asc-r8-compiler-optimization-as-a-decompiler-primitive-54834).
 
@@ -11,15 +11,20 @@ Repository links:
 - Python reference implementation: [MG1937/ASC](https://github.com/MG1937/ASC)
 - Rust implementation: [MG1937/rust_ASC](https://github.com/MG1937/rust_ASC)
 - Full-APK pseudocode exporter: [MG1937/radguard](https://github.com/MG1937/radguard)
+- HarmonyOS implementation source: [ReverseToolkit/ASC_rs](https://github.com/ReverseToolkit/ASC_rs)
+- Ark decompiler source: [asmjmp0/xpanda](https://github.com/asmjmp0/xpanda)
 
 https://github.com/user-attachments/assets/f1f71a75-1eca-4647-89ce-406ed2c63c6b
 
 ## Features
 
 - Search code references for strings, types, methods, and fields across every DEX in an APK.
-- Locate and decompile one class directly from an APK.
-- List classes and defined methods, and decode `AndroidManifest.xml`.
-- Export pseudocode for every class in an APK with the public API of [MG1937/radguard](https://github.com/MG1937/radguard).
+- Read bare Ark `.abc` files and HarmonyOS HAP/HSP archives, including resources and module configuration.
+- Recover JavaScript or Ark assembly for one or many Harmony records.
+- Search Ark constants, signed integers, resolved instructions, calls, fields, types, and strings with bytecode locations.
+- Locate and decompile one or many Android classes directly from an APK.
+- List classes and defined Android methods, and decode Android or Harmony manifests.
+- Export Android pseudocode through [MG1937/radguard](https://github.com/MG1937/radguard), or export selected Harmony records as `.js`/`.pa` files.
 - Handle multi-DEX APKs and DEX 041 logical containers.
 - Use memory-mapped APK access and no on-disk cache.
 - Expose CLI queries as MCP tools over stdio.
@@ -27,10 +32,11 @@ https://github.com/user-attachments/assets/f1f71a75-1eca-4647-89ce-406ed2c63c6b
 ## Why it is fast
 
 - Stateless by design: no preprocessing, no global index build, no disk cache.
-- The APK is memory-mapped, and only the DEX entries a query needs are inflated.
-- Cross-DEX scans run in parallel, so a search over dozens of DEX files stays in the millisecond range.
+- APK and HAP archives are memory-mapped, and only the DEX or ABC members a query needs are inflated.
+- Cross-member scans run in parallel, while each parsed DEX or ABC session is reused within the operation.
 - R8 output is already highly structured. Searches jump to candidate offsets directly instead of rebuilding a bloated cross-reference database.
 - On a hit, rust_ASC decompiles the class directly from the containing DEX without rebuilding it. It falls back to rebuilding a minimal self-consistent DEX in memory only when direct decompilation fails for that class; `--debug` logs which path was taken.
+- Harmony queries preserve Ark bytecode locations and resolve imports conservatively, without inventing generated-source offsets.
 
 ## Build
 
@@ -42,6 +48,8 @@ cd rust_ASC
 cargo build --release
 ```
 
+The `rust_ASC` binary requires Rust 1.93 because its Android manifest dependency declares that MSRV. The standalone Harmony crates (`asc-abc`, `asc-abc-dec`, and `asc-hap`) retain Rust 1.88 support.
+
 For an existing checkout:
 
 ```bash
@@ -49,10 +57,16 @@ git submodule update --init --recursive
 cargo build --release
 ```
 
-MCP is enabled by default. Build only the original CLI with:
+MCP and HarmonyOS support are enabled by default. Build the Android-only CLI with:
 
 ```bash
 cargo build --release --no-default-features
+```
+
+Build the CLI with HarmonyOS support but without MCP with:
+
+```bash
+cargo build --release --no-default-features --features harmony
 ```
 
 The executable is written to:
@@ -121,28 +135,49 @@ rust_ASC getmanifest app.apk -o AndroidManifest.xml
 rust_ASC export --thread 10 --debug app.apk output
 rust_ASC export --prefix com.example app.apk output
 rust_ASC export --classes-file classes.txt app.apk output
+
+# Detect HAP/HSP/ABC by content and recover Harmony records as JavaScript or assembly.
+rust_ASC listclass app.hap
+rust_ASC getclass app.hap '&entry/src/main/ets/pages/Index&' --abc-output source
+rust_ASC getclass modules.abc '&entry/src/main/ets/pages/Index&' --abc-output asm
+rust_ASC getclass modules.abc '&entry/src/main/ets/pages/Index&' --resources resources/
+
+# Search structured Ark constants and instructions.
+rust_ASC findrefs app.hap constant 'https://.*' --json
+rust_ASC findrefs app.hap integer -0x1 --json
+rust_ASC findrefs modules.abc code 'lda\.str' --json
+
+# Decode Harmony module/config metadata and export selected records.
+rust_ASC getmanifest app.hap --json
+rust_ASC export --abc-output source --prefix entry/src app.hap output
 ```
 
-`getclass` accepts one or more class names on the command line and/or `--classes-file <file>` (one class per line, `#` comments allowed). Passing `--json` always emits a JSON array where each element includes `class`, `status`, `dex`, `source`, and `member_references` (`start`, `end`, `kind`, `class`, `name`, `descriptor`, `declaration`, `synthetic`).
+Input type is detected from the PANDA magic or ZIP contents rather than the filename extension. `getclass` accepts one or more class/record names and/or `--classes-file <file>` (one name per line, `#` comments allowed). Android JSON includes `dex` and `member_references`; Harmony JSON includes `backend`, `language`, and the source ABC `member`. A batch keeps successful output when another requested item fails and returns a nonzero status for the partial failure.
 
-`findrefs` takes `string`, `type`, `extends`, `impl`, `method`, or `field`. `extends` and `impl` print matching class descriptors; the rest print referencing methods. `type` accepts both dotted names (`com.example.Main`) and Dalvik descriptors (`Lcom/example/Main;`). For `string`, `--max-match <N>` truncates long matched constants and `--no-match` omits the `matched=(...)` suffix. Passing `--json` emits a structured JSON array. For `method` and `field`, `--class` is an exact dotted name or Dalvik descriptor, and `--fuzzy-class` makes it a case sensitive substring. `-o` also writes the output to a file.
+`findrefs` takes `string`, `type`, `extends`, `impl`, `method`, or `field` for Android input. Harmony input supports `string`, `type`, `method`, `field`, `constant`, `integer`, and `code`; `extends`, `impl`, and `--fuzzy-class` are rejected because they do not have equivalent Ark semantics. Harmony JSON records include the ABC member, caller, bytecode `pc`, opcode, hit kind, resolution state, and matched value. For `string`, `--max-match <N>` truncates long displayed constants and `--no-match` omits the matched value. `-o` also writes the output to a file.
 
 `listmethod` prints one Dalvik method descriptor per line, for example `Lcom/example/Main;->onCreate(Landroid/os/Bundle;)V`. It lists only methods defined in class data, in DEX/class/declaration order with duplicates preserved. `--class` takes an exact dotted name or descriptor; `-f` is a case insensitive name substring; `--json` emits a JSON array. `-o` writes to a file instead of stdout.
 
 `liststring` prints one string pool value per line, straight from the DEX string table, including literals nothing references. Order is DEX central-directory then string index; duplicates across DEX files are preserved unless `-u` / `--unique` is passed. `-f` is a case insensitive substring filter, while `findrefs string` is case sensitive. `--json` emits a JSON array. `-o` writes to a file instead of stdout.
 
-`export` writes one `.java` pseudocode file per selected class under package-relative paths in the output directory, using the parallel APK pipeline from [MG1937/radguard](https://github.com/MG1937/radguard). `--prefix` and `--classes-file` filter classes before decompilation; if a filter matches no classes or any class in `--classes-file` is missing from the APK, `export` exits with status `1`. `--debug` logs the export lifecycle.
+`listmethod` and `liststring` are DEX-specific and return a capability error for HAP/ABC input.
+
+`getmanifest` decodes `AndroidManifest.xml` for APK input. For HAP/HSP input it emits `module.json`, legacy `config.json`, and `pack.info` when present, with Harmony resource references resolved; `--json` returns an object keyed by member name.
+
+`export` writes one `.java` pseudocode file per selected Android class, or one `.js`/`.pa` file per selected Harmony record. HAP exports use a member namespace so equal record names from different ABC files cannot overwrite each other. `--prefix` and `--classes-file` filter before decompilation. Missing requested items, unreadable members, or an empty filter result cause a nonzero exit while preserving files already produced.
 
 ## MCP
 
-`rust_ASC mcp` runs a stdio MCP server that exposes the CLI commands as tools: `getclass`, `listclass`, `listmethod`, `liststring`, `getmanifest`, `findrefs`, and `export`. Calls execute in-process and reuse an LRU cache of memory-mapped APK archives and parsed central directories keyed by `(path, len, mtime)`.
+`rust_ASC mcp` runs a stdio MCP server that exposes the CLI commands as tools: `getclass`, `listclass`, `listmethod`, `liststring`, `getmanifest`, `findrefs`, and `export`. Calls execute in-process through the same dispatch path as the CLI. APK and HAP readers reuse bounded memory-mapped archive caches across requests.
 
-- `getclass` accepts `apk_path`, optional `class_name`, `classes`, `classes_file`, `json`, `thread`, and `output`.
+- Every tool accepts `apk_path`; `input_path` is an alias. Harmony-capable tools accept HAP/HSP/ABC when the `harmony` feature is built.
+- `getclass` accepts optional `class_name`, `classes`, `classes_file`, `json`, `thread`, `output`, `abc_output`, and `resources`.
 - `listclass` accepts `apk_path`, optional `prefix`, `json`, `thread`, and `output`.
 - `listmethod` accepts `apk_path`, optional `class_name`, `filter`, `json`, `thread`, and `output`.
 - `liststring` accepts `apk_path`, optional `filter`, `unique`, `json`, `thread`, and `output`.
-- `findrefs` accepts `apk_path`, `query` (`string`, `type`, `extends`, `impl`, `method`, or `field`), optional `json`, `thread`, and `output`. `string` queries also accept optional `max_match` and `no_match`.
-- `export` accepts `apk_path`, `output`, optional `prefix`, `classes_file`, and `thread`.
+- `findrefs` accepts the Android query kinds plus Harmony `constant`, `integer`, and `code`, with optional `json`, `thread`, `output`, and `resources`. `string` queries also accept `max_match` and `no_match`.
+- `getmanifest` accepts optional `output` and Harmony `json`.
+- `export` accepts `output`, optional `prefix`, `classes_file`, `thread`, `abc_output`, and `resources`.
 
 Configure it in your MCP client:
 
