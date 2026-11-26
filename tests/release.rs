@@ -9,6 +9,9 @@ use regex::Regex;
 use tempfile::tempdir;
 use zip_fixture::{write_apk, CompressionMethod};
 
+#[cfg(feature = "harmony")]
+const HARMONY_ABC: &[u8] = include_bytes!("../crates/asc-abc-dec/tests/fixtures/class.abc");
+
 fn valid_release_version(version: &str) -> bool {
     Regex::new(r"^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:alpha|beta|rc)\.[1-9]\d*)?$")
         .unwrap()
@@ -84,4 +87,29 @@ fn binary_runs_outside_checkout() {
         &["getclass", apk_path, "example.Test"],
         "class Test",
     );
+
+    #[cfg(feature = "harmony")]
+    {
+        let abc = directory.path().join("fixture.bin");
+        std::fs::write(&abc, HARMONY_ABC).unwrap();
+        let abc_path = abc.to_str().unwrap();
+        assert_output(
+            &binary,
+            directory.path(),
+            &["listclass", abc_path],
+            "L_GLOBAL;",
+        );
+        assert_output(
+            &binary,
+            directory.path(),
+            &["getclass", abc_path, "L_GLOBAL;", "--abc-output", "asm"],
+            ".record L_GLOBAL;",
+        );
+        assert_output(
+            &binary,
+            directory.path(),
+            &["findrefs", abc_path, "code", "lda.str"],
+            "opcode=lda.str",
+        );
+    }
 }

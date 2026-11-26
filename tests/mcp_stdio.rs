@@ -165,6 +165,7 @@ fn exposes_six_documented_cli_wrappers() {
     assert_eq!(
         names,
         [
+            "export",
             "findrefs",
             "getclass",
             "getmanifest",
@@ -203,7 +204,7 @@ fn exposes_six_documented_cli_wrappers() {
     }
     client.send(
         json!({"jsonrpc":"2.0", "id":100, "method":"tools/call", "params":{
-            "name":"export", "arguments":{}
+            "name":"unknown_tool", "arguments":{}
         }}),
     );
     assert_eq!(client.recv()["error"]["code"], -32602);
@@ -579,4 +580,31 @@ fn minimal_manifest() -> Vec<u8> {
     }
     assert_eq!(out.len(), 120);
     out
+}
+
+#[cfg(feature = "harmony")]
+#[test]
+fn harmony_tools_preserve_partial_json_and_share_cli_dispatch() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("modules.abc");
+    let bytes = include_bytes!("../crates/asc-abc-dec/tests/fixtures/class.abc");
+    std::fs::write(&input, bytes).unwrap();
+    let path = input.to_str().unwrap();
+    let class = asc_abc::class_names(bytes, None).unwrap()[0].clone();
+    let mut client = Client::new();
+    let listed = client.call("listclass", json!({"input_path":path,"json":true}));
+    assert!(listed.get("isError").and_then(Value::as_bool) != Some(true));
+    assert!(!serde_json::from_str::<Vec<String>>(text(&listed)).unwrap().is_empty());
+    let result = client.call("getclass", json!({"input_path":path,"classes":[class,"missing.Record"],"json":true,"abc_output":"asm"}));
+    assert_eq!(result["isError"], true);
+    let payload = text(&result);
+    let (partial, _) = payload.split_once("\nError:").unwrap();
+    let rows: Value = serde_json::from_str(partial).unwrap();
+    assert_eq!(rows[0]["status"], "ok");
+    assert_eq!(rows[1]["status"], "not_found");
+    let result = client.call("findrefs", json!({"input_path":path,"query":{"kind":"code","value":"lda.str"},"json":true}));
+    assert!(result.get("isError").and_then(Value::as_bool) != Some(true));
+    let rows: Value = serde_json::from_str(text(&result)).unwrap();
+    assert!(!rows.as_array().unwrap().is_empty());
+    client.finish();
 }

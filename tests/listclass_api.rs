@@ -9,10 +9,13 @@ use zip_fixture::{CompressionMethod, write_apk};
 #[test]
 fn row_api_returns_strings_in_dex_order_and_preserves_duplicates() {
     let dir = tempdir().unwrap();
-    let apk = dir.path().join("classes.apk");
     let first = make_class_only_dex(&["Lalpha/First;", "Lbeta/Other;"], 0, b"035");
     let second = make_class_only_dex(&["Lalpha/Second;", "Lalpha/First;"], 0, b"035");
-    for compression in [CompressionMethod::Stored, CompressionMethod::Deflated] {
+    for (name, compression) in [
+        ("stored", CompressionMethod::Stored),
+        ("deflated", CompressionMethod::Deflated),
+    ] {
+        let apk = dir.path().join(format!("classes-{name}.apk"));
         write_apk(
             &apk,
             &[("classes.dex", &first), ("classes2.dex", &second)],
@@ -51,8 +54,11 @@ fn row_api_does_not_reparse_names_as_newline_delimited_output() {
     ];
     let dex = make_class_only_dex(&descriptors, 0, b"035");
     let dir = tempdir().unwrap();
-    let apk = dir.path().join("records.apk");
-    for compression in [CompressionMethod::Stored, CompressionMethod::Deflated] {
+    for (name, compression) in [
+        ("stored", CompressionMethod::Stored),
+        ("deflated", CompressionMethod::Deflated),
+    ] {
+        let apk = dir.path().join(format!("records-{name}.apk"));
         write_apk(&apk, &[("classes.dex", &dex)], compression);
         let handler = ApkHandler::new(apk.to_str().unwrap(), false, 1);
         let rows: Vec<String> = handler.list_classes(None).unwrap();
@@ -64,8 +70,11 @@ fn row_api_does_not_reparse_names_as_newline_delimited_output() {
 fn row_api_lists_every_dex041_member() {
     let dex = make_dex041_container();
     let dir = tempdir().unwrap();
-    let apk = dir.path().join("container.apk");
-    for compression in [CompressionMethod::Stored, CompressionMethod::Deflated] {
+    for (name, compression) in [
+        ("stored", CompressionMethod::Stored),
+        ("deflated", CompressionMethod::Deflated),
+    ] {
+        let apk = dir.path().join(format!("container-{name}.apk"));
         write_apk(&apk, &[("classes.dex", &dex)], compression);
         let handler = ApkHandler::new(apk.to_str().unwrap(), false, 2);
         let rows: Vec<String> = handler.list_classes(None).unwrap();

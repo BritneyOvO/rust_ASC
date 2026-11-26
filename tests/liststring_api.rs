@@ -9,10 +9,13 @@ use zip_fixture::{CompressionMethod, write_apk};
 #[test]
 fn row_api_returns_strings_in_dex_and_table_order_with_duplicates() {
     let dir = tempdir().unwrap();
-    let apk = dir.path().join("strings.apk");
     let first = make_strings_dex(&["https://alpha.example/v1", "alpha", "alpha"]);
     let second = make_strings_dex(&["beta", "https://alpha.example/v1"]);
-    for compression in [CompressionMethod::Stored, CompressionMethod::Deflated] {
+    for (name, compression) in [
+        ("stored", CompressionMethod::Stored),
+        ("deflated", CompressionMethod::Deflated),
+    ] {
+        let apk = dir.path().join(format!("strings-{name}.apk"));
         write_apk(
             &apk,
             &[("classes.dex", &first), ("classes2.dex", &second)],
@@ -46,8 +49,11 @@ fn filter_is_a_case_insensitive_substring_over_the_whole_pool() {
         "no match here",
     ];
     let dir = tempdir().unwrap();
-    let apk = dir.path().join("filter.apk");
-    for compression in [CompressionMethod::Stored, CompressionMethod::Deflated] {
+    for (name, compression) in [
+        ("stored", CompressionMethod::Stored),
+        ("deflated", CompressionMethod::Deflated),
+    ] {
+        let apk = dir.path().join(format!("filter-{name}.apk"));
         write_apk(
             &apk,
             &[("classes.dex", &make_strings_dex(&values))],

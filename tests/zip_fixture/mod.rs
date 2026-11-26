@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use libdeflater::{crc32, CompressionLvl, Compressor};
+use libdeflater::{CompressionLvl, Compressor, crc32};
 
 #[derive(Clone, Copy)]
 pub enum CompressionMethod {
@@ -31,9 +31,7 @@ fn compress(data: &[u8], method: CompressionMethod) -> (u16, Vec<u8>) {
         CompressionMethod::Deflated => {
             let mut compressor = Compressor::new(CompressionLvl::new(6).unwrap());
             let mut compressed = vec![0; compressor.deflate_compress_bound(data.len())];
-            let size = compressor
-                .deflate_compress(data, &mut compressed)
-                .unwrap();
+            let size = compressor.deflate_compress(data, &mut compressed).unwrap();
             compressed.truncate(size);
             (8, compressed)
         }
@@ -98,8 +96,7 @@ pub fn write_apk(path: &Path, entries: &[(&str, &[u8])], compression: Compressio
         output.extend_from_slice(&entry.name);
     }
 
-    let central_directory_size =
-        u32::try_from(output.len()).unwrap() - central_directory_offset;
+    let central_directory_size = u32::try_from(output.len()).unwrap() - central_directory_offset;
     let entry_count = u16::try_from(central_entries.len()).unwrap();
     push_u32(&mut output, 0x0605_4b50);
     push_u16(&mut output, 0);

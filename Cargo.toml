@@ -2,11 +2,13 @@
 name = "rust_ASC"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.93"
 license = "Apache-2.0"
 
 [features]
-default = ["mcp"]
-mcp = ["dep:rmcp", "dep:tokio", "dep:serde", "dep:serde_json", "dep:schemars"]
+default = ["mcp", "harmony"]
+harmony = ["dep:asc-abc", "dep:asc-abc-dec", "dep:asc-hap"]
+mcp = ["dep:rmcp", "dep:tokio", "dep:schemars"]
 
 [profile.release]
 opt-level = 3           # max speed
@@ -20,10 +22,13 @@ debug = true
 opt-level = 0
 
 [dependencies]
+asc-abc = { workspace = true, optional = true }
+asc-abc-dec = { workspace = true, optional = true }
+asc-hap = { workspace = true, optional = true }
 rmcp = { version = "3.5.1", optional = true, default-features = false, features = ["server", "transport-io"] }
 tokio = { version = "1", optional = true, features = ["rt", "io-std", "time"] }
-serde = { version = "1", optional = true, features = ["derive"] }
-serde_json = { version = "1", optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 schemars = { version = "1", optional = true }
 # getclass keeps chunked flate2 decompression for cooperative early cancellation.
 flate2 = { version = "1", default-features = false, features = ["zlib-rs"] }
@@ -43,3 +48,26 @@ regex = "1"
 adler2 = "2"
 sha1 = "0.10"
 tempfile = "3"
+
+[workspace]
+members = [".", "crates/asc-abc", "crates/asc-abc-dec", "crates/asc-hap"]
+default-members = ["."]
+exclude = ["radguard"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+license = "Apache-2.0"
+repository = "https://github.com/BritneyOvO/rust_ASC"
+
+[workspace.dependencies]
+regex = "1"
+thiserror = "2.0.21"
+flate2 = { version = "1", default-features = false, features = ["zlib-rs"] }
+memmap2 = "0.9"
+crc32fast = "1.5.2"
+asc-abc = { path = "crates/asc-abc" }
+asc-abc-dec = { path = "crates/asc-abc-dec" }
+asc-hap = { path = "crates/asc-hap" }

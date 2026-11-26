@@ -1,0 +1,412 @@
+{
+  "investigation_date": "2026-11-26",
+  "target": {
+    "path": "/root/rust_ASC",
+    "url": "https://github.com/BritneyOvO/rust_ASC.git",
+    "head": "0daddfb832b24bd0e43e76a9365eab4673db0cec",
+    "radguard": "752dfd1106715db6df5f2746dcfea9b47bbb899e"
+  },
+  "ltlly_main": {
+    "path": "/root/rust_ASC_ltlly",
+    "url": "https://github.com/ltlly/rust_ASC.git",
+    "head": "30c3fb7487a2f98d1aa3e8e62dddab2b5d45ef1a",
+    "radguard": "4e0c5ec803d46b51eecf3f6db7e12d1034a12f04"
+  },
+  "ltlly_semantic": {
+    "ref": "ltlly/feat/semantic-metadata-and-exact-unit",
+    "head": "7a7875b1c50cda7bcfc8a89fcf7b4dc8045eeaff",
+    "radguard": "3ce0e9bb0090ae42e70eee561a624a91474f3363",
+    "tested": false
+  },
+  "harmony_source": {
+    "path": "/root/ASC_rs",
+    "url": "https://github.com/ReverseToolkit/ASC_rs.git",
+    "head": "bca5c2a62dee93c315067a40aa016c7c5a6ad156",
+    "status": [
+      " M Cargo.lock",
+      " M crates/asc-abc-dec/Cargo.toml",
+      " M crates/asc-abc-dec/src/file.rs",
+      " M crates/asc-abc-dec/src/lib.rs",
+      " M crates/asc-hap/src/hap.rs",
+      " M crates/asc/src/cli.rs",
+      "?? crates/asc-abc-dec/src/xref/"
+    ],
+    "tracked_diff_sha256": "079ad23a4591a42600758d2d2dac292f5e03d123aacad69b9a5fd81d7098df96",
+    "tracked_files": [
+      {
+        "path": "Cargo.lock",
+        "committed_sha256": "12bb6c853b6f6ccf7188b5960bec57efd6df1e10a01290da2e8b0022d5a16a64",
+        "worktree_sha256": "97c723179538243f699f2a00b8fa9d74934a9d01c899bda25f83dcd24da846d6",
+        "modified": true
+      },
+      {
+        "path": "Cargo.toml",
+        "committed_sha256": "baea94e2be66afbd6045e05425b81939a93d3887b705b5bf4ca312d006a551f7",
+        "worktree_sha256": "baea94e2be66afbd6045e05425b81939a93d3887b705b5bf4ca312d006a551f7",
+        "modified": false
+      },
+      {
+        "path": "LICENSE",
+        "committed_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "worktree_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "modified": false
+      },
+      {
+        "path": "NOTICE",
+        "committed_sha256": "c1d32a11628971c29e2def771e7cd06704b3711e36b4491ea9e373274f3cd16e",
+        "worktree_sha256": "c1d32a11628971c29e2def771e7cd06704b3711e36b4491ea9e373274f3cd16e",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/Cargo.toml",
+        "committed_sha256": "744651842e72613ad1d127fc0c9185e978da073ff3325a326924a7c7a8c6b7e4",
+        "worktree_sha256": "89fdbbaea4a337b9aa33f85feaddd5d8ed01fcf4c3fb6512fec2488f140d9648",
+        "modified": true
+      },
+      {
+        "path": "crates/asc-abc-dec/README.md",
+        "committed_sha256": "678c3ea69eb014ee3941016d625cd4ed41663ef07e8aa9aab4c6ebbecb5f7f19",
+        "worktree_sha256": "678c3ea69eb014ee3941016d625cd4ed41663ef07e8aa9aab4c6ebbecb5f7f19",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/build.rs",
+        "committed_sha256": "c7f11307bb759e36861c37780890849c75fabef55541868ed5643c5411368231",
+        "worktree_sha256": "c7f11307bb759e36861c37780890849c75fabef55541868ed5643c5411368231",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/resources/opcodes.tsv",
+        "committed_sha256": "d335c5673def14dd1d0503857cfdd46c63c18140702f1cbfc6503ba6f61e4f0b",
+        "worktree_sha256": "d335c5673def14dd1d0503857cfdd46c63c18140702f1cbfc6503ba6f61e4f0b",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/cfg.rs",
+        "committed_sha256": "758e3ce07c3c3735279a806e28fd89515b565bc0b52232df9f2f141aa74ad54f",
+        "worktree_sha256": "758e3ce07c3c3735279a806e28fd89515b565bc0b52232df9f2f141aa74ad54f",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/codegen.rs",
+        "committed_sha256": "cab45360d3d92ea0d2d235bf8dea051d0ba5dd6256dcc3edded90ebd52c8b4cd",
+        "worktree_sha256": "cab45360d3d92ea0d2d235bf8dea051d0ba5dd6256dcc3edded90ebd52c8b4cd",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/decode.rs",
+        "committed_sha256": "2a8596d5af71f5ea5f88e0e9dab28ebefd3f8da4da12d909a778f41c1ffcdbe0",
+        "worktree_sha256": "2a8596d5af71f5ea5f88e0e9dab28ebefd3f8da4da12d909a778f41c1ffcdbe0",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/file.rs",
+        "committed_sha256": "c2021b89e4321e6ddbe6fb94dd731e1f4a39b2dab0a6dddeabfd20bc26f4a547",
+        "worktree_sha256": "1fd3d39defd6d221de5bfad5eb3c442e230d349f8094cbe69975e9593784d07d",
+        "modified": true
+      },
+      {
+        "path": "crates/asc-abc-dec/src/lib.rs",
+        "committed_sha256": "bca0bae957c6ba938d87eda34134d6e39e3c0253b82ad9814c17c9e02662b777",
+        "worktree_sha256": "aeb8a0ffa9782d950c6ec1cb52c0efa2f4ded273324e43231264cb685e484913",
+        "modified": true
+      },
+      {
+        "path": "crates/asc-abc-dec/src/lower.rs",
+        "committed_sha256": "8ed28f826a07933d297c8fe5b354805a7537e2eddfd49a630851afae159d1169",
+        "worktree_sha256": "8ed28f826a07933d297c8fe5b354805a7537e2eddfd49a630851afae159d1169",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/optimize.rs",
+        "committed_sha256": "5492209288fa86da2bbe3fe828a781672934a691f6c396c97dcc710115617ed3",
+        "worktree_sha256": "5492209288fa86da2bbe3fe828a781672934a691f6c396c97dcc710115617ed3",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/optimize/analysis.rs",
+        "committed_sha256": "4649ec1c12e686ed41bdcd275324fcc42b13c77debe8096c903e44f0bbc2dcdf",
+        "worktree_sha256": "4649ec1c12e686ed41bdcd275324fcc42b13c77debe8096c903e44f0bbc2dcdf",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/optimize/branches.rs",
+        "committed_sha256": "eede98830d44a6c5473f9312b4752a268a1df0137b2aee67f7cad0b3cd481255",
+        "worktree_sha256": "eede98830d44a6c5473f9312b4752a268a1df0137b2aee67f7cad0b3cd481255",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/optimize/classes.rs",
+        "committed_sha256": "d1be86e271d809acac527346cf82727eb5f9fc9ce9479ddce93ca8c5342cd9e0",
+        "worktree_sha256": "d1be86e271d809acac527346cf82727eb5f9fc9ce9479ddce93ca8c5342cd9e0",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/optimize/factories.rs",
+        "committed_sha256": "568576716bc39317a3789e4c03ff9d18ed0162e574453022019774caea648b86",
+        "worktree_sha256": "568576716bc39317a3789e4c03ff9d18ed0162e574453022019774caea648b86",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/optimize/finally.rs",
+        "committed_sha256": "bea62b26f7340d5ed54301d8173a905219bf93ed9ef9e794406f7e8349d20bfa",
+        "worktree_sha256": "bea62b26f7340d5ed54301d8173a905219bf93ed9ef9e794406f7e8349d20bfa",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/optimize/globals.rs",
+        "committed_sha256": "f5367b44cb6b04454f6e05315e7db14f9c2b1f55f80ce811c5cfae1b08c62b77",
+        "worktree_sha256": "f5367b44cb6b04454f6e05315e7db14f9c2b1f55f80ce811c5cfae1b08c62b77",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/optimize/initialized.rs",
+        "committed_sha256": "bd3821d720ae4b73c6b11ef9101acbf23c43ffe11204bf68a6f4400a87b63cd9",
+        "worktree_sha256": "bd3821d720ae4b73c6b11ef9101acbf23c43ffe11204bf68a6f4400a87b63cd9",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/optimize/lexical.rs",
+        "committed_sha256": "a6166b018656be3d155c85905f1fa14c1cd1c73c28c8c18eb4d280f1b8c5993e",
+        "worktree_sha256": "a6166b018656be3d155c85905f1fa14c1cd1c73c28c8c18eb4d280f1b8c5993e",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/optimize/objects.rs",
+        "committed_sha256": "f8f46f5f0d13f0958c614f63ea3405c326eb8261eec6e406aee82498e257a063",
+        "worktree_sha256": "f8f46f5f0d13f0958c614f63ea3405c326eb8261eec6e406aee82498e257a063",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/optimize/polish.rs",
+        "committed_sha256": "3f10340e543f969e61bd7e1dff32d7c6229c90583c489b4abec05c5637a13a55",
+        "worktree_sha256": "3f10340e543f969e61bd7e1dff32d7c6229c90583c489b4abec05c5637a13a55",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/optimize/syntax.rs",
+        "committed_sha256": "3fd97ce7feb0dcbfd5f3021fe9ff2d9a16310d10610be66dbdf459b26dcb6d51",
+        "worktree_sha256": "3fd97ce7feb0dcbfd5f3021fe9ff2d9a16310d10610be66dbdf459b26dcb6d51",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/optimize/temps.rs",
+        "committed_sha256": "4d6fbe51b5358d1498e30352328da8c463bc14246e181eead6a21de73467b89e",
+        "worktree_sha256": "4d6fbe51b5358d1498e30352328da8c463bc14246e181eead6a21de73467b89e",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/src/optimize/tests.rs",
+        "committed_sha256": "4b695c017e059367ee7e54dc45d63aca3d2dd704d8512e32430324293a0a8797",
+        "worktree_sha256": "4b695c017e059367ee7e54dc45d63aca3d2dd704d8512e32430324293a0a8797",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/tests/decompile.rs",
+        "committed_sha256": "ce82a17f69dcff071754e96526dce3224cf66a57a88021a28fd1753cf4ed2d8d",
+        "worktree_sha256": "ce82a17f69dcff071754e96526dce3224cf66a57a88021a28fd1753cf4ed2d8d",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/tests/fixtures/README.md",
+        "committed_sha256": "87948a14e0c019c28c2df01acae5961d230a754b9db78ea13088b2ff5b25396c",
+        "worktree_sha256": "87948a14e0c019c28c2df01acae5961d230a754b9db78ea13088b2ff5b25396c",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/tests/fixtures/aes.abc",
+        "committed_sha256": "97f71393a5bdf6170bf42d790a9cdb63cf80d2d6d5db9e673a941e4660aee5e0",
+        "worktree_sha256": "97f71393a5bdf6170bf42d790a9cdb63cf80d2d6d5db9e673a941e4660aee5e0",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/tests/fixtures/class.abc",
+        "committed_sha256": "4d9621ceaaccee1ecc8402bb0e5cfcdca0a463fb28bf6e34665f41f96913d9e1",
+        "worktree_sha256": "4d9621ceaaccee1ecc8402bb0e5cfcdca0a463fb28bf6e34665f41f96913d9e1",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/tests/fixtures/hx360e.abc",
+        "committed_sha256": "0529dad95a1fa5aaff875ef16c5840ab84144602c11a35a8091bddc528a79a45",
+        "worktree_sha256": "0529dad95a1fa5aaff875ef16c5840ab84144602c11a35a8091bddc528a79a45",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc-dec/tests/fixtures/md5.abc",
+        "committed_sha256": "cd3f06b2ffb45f75eee1ca4cdb2852f8b8897ec0b362f4b698b2aeacf9e0c836",
+        "worktree_sha256": "cd3f06b2ffb45f75eee1ca4cdb2852f8b8897ec0b362f4b698b2aeacf9e0c836",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc/Cargo.toml",
+        "committed_sha256": "36c611cac55f533db25fb250d186d8b931ab80ba6742a3f6beabc7bbad717753",
+        "worktree_sha256": "36c611cac55f533db25fb250d186d8b931ab80ba6742a3f6beabc7bbad717753",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc/src/error.rs",
+        "committed_sha256": "e34c8f7d4b4214cb62578fa6dc1a6bdb874044e90230a65552625f7a37590c1f",
+        "worktree_sha256": "e34c8f7d4b4214cb62578fa6dc1a6bdb874044e90230a65552625f7a37590c1f",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc/src/file.rs",
+        "committed_sha256": "d8e2d9039dc99191cfaf54ff356d97b80ce8a461dd12b0e4c2af87488b4303e9",
+        "worktree_sha256": "d8e2d9039dc99191cfaf54ff356d97b80ce8a461dd12b0e4c2af87488b4303e9",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc/src/lib.rs",
+        "committed_sha256": "90ec874c4e3db6ddf36e018f8d349776888bce54de995dc761a2b222fd683c2d",
+        "worktree_sha256": "90ec874c4e3db6ddf36e018f8d349776888bce54de995dc761a2b222fd683c2d",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-abc/tests/file.rs",
+        "committed_sha256": "a2ea0ae1081486101da08173213f9be3c61449b9427c676b03d9b26232bb4477",
+        "worktree_sha256": "a2ea0ae1081486101da08173213f9be3c61449b9427c676b03d9b26232bb4477",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-hap/Cargo.toml",
+        "committed_sha256": "718b363d515fb35a14cfb53066db4bcecfe0d310dd00d46a8c232be1004f0e00",
+        "worktree_sha256": "718b363d515fb35a14cfb53066db4bcecfe0d310dd00d46a8c232be1004f0e00",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-hap/src/error.rs",
+        "committed_sha256": "70ec1b268aad1f1064111572d2baa0b8dd222e5d7ee59872701b0186ab699c44",
+        "worktree_sha256": "70ec1b268aad1f1064111572d2baa0b8dd222e5d7ee59872701b0186ab699c44",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-hap/src/hap.rs",
+        "committed_sha256": "b925bfd6a987aba210eda12941e6e4ba6b86cb765584543553c5b7d31b901b73",
+        "worktree_sha256": "f8949f98a1038ee93de08bf65e0f340fbf5101e57bf921fc512f71c79d692535",
+        "modified": true
+      },
+      {
+        "path": "crates/asc-hap/src/lib.rs",
+        "committed_sha256": "25a1078e7cb7486093bea8f956839cbe3793703d4764306be2fe6db21456970d",
+        "worktree_sha256": "25a1078e7cb7486093bea8f956839cbe3793703d4764306be2fe6db21456970d",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-hap/src/resources.rs",
+        "committed_sha256": "bee962f36a1a0c47b0141878f7bf6ee7223d8da6077d370402ddf245f271a718",
+        "worktree_sha256": "bee962f36a1a0c47b0141878f7bf6ee7223d8da6077d370402ddf245f271a718",
+        "modified": false
+      },
+      {
+        "path": "crates/asc-hap/tests/hap.rs",
+        "committed_sha256": "b68b38ca6dc98f2a15da4efc2a421d4ae6470273408211b90b61e6b9ee16f151",
+        "worktree_sha256": "b68b38ca6dc98f2a15da4efc2a421d4ae6470273408211b90b61e6b9ee16f151",
+        "modified": false
+      },
+      {
+        "path": "crates/asc/src/cli.rs",
+        "committed_sha256": "95ebd5abc4aaf83973c7bfff6e54803c871aabedbbe3ed862e194a860932aef4",
+        "worktree_sha256": "108e4078258a777b9a5d9c66c8eef775c82d19dc8d2a9f5f89c489181887be37",
+        "modified": true
+      }
+    ],
+    "untracked_files": [
+      {
+        "path": "crates/asc-abc-dec/src/xref/constants.rs",
+        "sha256": "1086c1c8e23ca9292616b9ccdb5820d5991dffd6a358b55f569720ab79099319"
+      },
+      {
+        "path": "crates/asc-abc-dec/src/xref/flow.rs",
+        "sha256": "df91f2bcd1967a0226f915709ee9b128706140e42cd4ca964067ba5dd1e257bd"
+      },
+      {
+        "path": "crates/asc-abc-dec/src/xref/index.rs",
+        "sha256": "99bd8d18e3b33c493c368cb900555aa0fdff09ee36abe5acd533a045009ba16d"
+      },
+      {
+        "path": "crates/asc-abc-dec/src/xref/mod.rs",
+        "sha256": "01e28a672d10cd3bbd0f5f1b72aab0460602ab37246880936d0c1eb76ced78f3"
+      },
+      {
+        "path": "crates/asc-abc-dec/src/xref/tests.rs",
+        "sha256": "ed0245890e181fc3cd3546f55b74411c98ec923e2b525350a096734a342fb492"
+      }
+    ]
+  },
+  "validation": {
+    "ltlly_main": {
+      "command": "cargo test --locked",
+      "result": "passed",
+      "tests": 95
+    },
+    "harmony_abc": {
+      "tests_passed": 15
+    },
+    "harmony_hap": {
+      "tests_passed": 12
+    },
+    "harmony_decompile_integration": {
+      "tests_passed": 17
+    },
+    "harmony_decompile_library": {
+      "tests_passed": 27,
+      "tests_failed": 1,
+      "failed_test": "xref::tests::modern_literal_buffers_and_cross_record_calls_are_searchable",
+      "scope": "source worktree before porting; preserved as investigation evidence"
+    },
+    "integrated_branch": {
+      "branch": "integrate/harmonyos",
+      "base": "30c3fb7487a2f98d1aa3e8e62dddab2b5d45ef1a",
+      "verified_head_before_final_commit": "80ac390919d989395dffcedaa8f33596b5c6e8c0",
+      "radguard": "4e0c5ec803d46b51eecf3f6db7e12d1034a12f04",
+      "msrv": {
+        "root": "1.93 (apk-info-axml 1.0.13 and apk-info-xml 1.0.13 declare rust-version 1.93)",
+        "harmony_crates": "1.88",
+        "harmony_check": {
+          "command": "cargo +1.88.0 check -p asc-abc -p asc-abc-dec -p asc-hap --locked",
+          "result": "passed"
+        }
+      },
+      "workspace_tests": {
+        "command": "cargo test --workspace --all-features --locked",
+        "result": "passed",
+        "fixed_test": "xref::tests::modern_literal_buffers_and_cross_record_calls_are_searchable"
+      },
+      "release_tests": {
+        "command": "cargo test --workspace --all-features --release --locked",
+        "result": "passed"
+      },
+      "feature_matrix": [
+        {
+          "command": "cargo test -p rust_ASC --no-default-features --locked",
+          "result": "passed"
+        },
+        {
+          "command": "cargo test -p rust_ASC --no-default-features --features harmony --locked",
+          "result": "passed"
+        },
+        {
+          "command": "cargo test -p rust_ASC --no-default-features --features mcp --locked",
+          "result": "passed"
+        }
+      ],
+      "clippy": {
+        "command": "cargo clippy --workspace --all-targets --all-features --locked",
+        "result": "passed with pre-existing Android warnings"
+      },
+      "release_build": {
+        "command": "cargo build --release --locked",
+        "result": "passed"
+      },
+      "standalone_binary": {
+        "test": "release::binary_runs_outside_checkout",
+        "result": "passed for APK and extensionless bare ABC listclass/getclass/findrefs"
+      },
+      "source_recheck": {
+        "head": "bca5c2a62dee93c315067a40aa016c7c5a6ad156",
+        "tracked_diff_sha256": "079ad23a4591a42600758d2d2dac292f5e03d123aacad69b9a5fd81d7098df96",
+        "result": "unchanged from investigation"
+      }
+    }
+  }
+}
